@@ -39,17 +39,20 @@ export const authConfig: NextAuthConfig = {
     error: "/login",
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
       if (user) {
-        token.sub = user.id || "demo-user";
-        token.email = user.email || "demo@archvision.ai";
-        token.name = user.name || "User";
+        token.sub = user.id || token.sub || "user-id";
+        token.email = user.email || token.email;
+        token.name = user.name || token.name;
+      }
+      if (account) {
+        token.provider = account.provider;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = (token.sub as string) || "demo-user";
+        session.user.id = (token.sub as string) || "user-id";
       }
       return session;
     },
