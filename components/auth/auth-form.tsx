@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useFormStatus } from "react-dom";
 import { GithubIcon } from "@/components/ui/brand-icons";
 import { Loader2, Sparkles } from "lucide-react";
-import { loginWithGithub, loginWithDemo } from "@/app/login/actions";
+import { loginWithGithub, loginWithDemo } from "@/app/actions/auth";
 
 export type AuthMode = "login" | "register";
 
-interface AuthFormProps {
+export interface AuthFormProps {
   mode: AuthMode;
+  hasGithub?: boolean;
+  hasGoogle?: boolean;
 }
 
 function DemoSubmitButton() {
