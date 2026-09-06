@@ -202,6 +202,7 @@ export function detectArchitectureFromText(text: string, options: DetectionOptio
       name: clean,
       kind: kindForName(clean),
       stereotype: stereotypeFor(clean),
+      parentId: null,
       attributes: [],
       methods: [],
       isAbstract: false,

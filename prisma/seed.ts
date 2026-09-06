@@ -1,5 +1,5 @@
 import { config as loadEnv } from "dotenv";
-import { ensureSeeded } from "@/lib/data/repository";
+import { ensureSeeded } from "@/lib/data/seed";
 
 loadEnv({ path: ".env.local" });
 loadEnv({ path: ".env" });

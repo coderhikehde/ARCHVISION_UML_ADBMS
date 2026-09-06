@@ -11,6 +11,8 @@ import { inferNodeKind } from "@/lib/architecture/model";
 export interface UMLNodeData {
   label: string;
   stereotype: string | null;
+  /** C4 container id — kept on node data so canvas round-trips preserve it. */
+  parentId: string | null;
   isAbstract: boolean;
   isInterface: boolean;
   kind: ArchitectureNodeKind;
@@ -21,7 +23,7 @@ export interface UMLNodeData {
 
 export type UMLNodeDataWithMeta = UMLNodeData & Record<string, unknown>;
 
-export type UMLFlowNode = Node<UMLNodeDataWithMeta, "uml" | "actor-node" | "database-node">;
+export type UMLFlowNode = Node<UMLNodeDataWithMeta, "uml" | "actor-node" | "database-node" | "c4-group">;
 export type UMLFlowEdge = Edge;
 
 export const NODE_TYPE = "uml";
@@ -58,6 +60,7 @@ function buildNode(cls: UMLClass, position: { x: number; y: number }, viewMode: 
     data: {
       label: cls.name,
       stereotype: cls.stereotype,
+      parentId: cls.parentId ?? null,
       isAbstract: cls.isAbstract,
       isInterface: cls.isInterface,
       kind,
@@ -69,17 +72,39 @@ function buildNode(cls: UMLClass, position: { x: number; y: number }, viewMode: 
 }
 
 export function layoutModel(model: UMLModel, viewMode: ViewMode, direction: "LR" | "TB" = "LR"): { nodes: UMLFlowNode[]; edges: UMLFlowEdge[] } {
-  const graph = new dagre.graphlib.Graph();
+  const isCompound = model.classes.some((c) => c.parentId);
+  const graph = new dagre.graphlib.Graph({ compound: isCompound });
   graph.setDefaultEdgeLabel(() => ({}));
   graph.setGraph({ rankdir: direction, nodesep: 48, ranksep: 96, marginx: 24, marginy: 24 });
 
   const width = 232;
+  // Identify containers (nodes that are parents)
+  const childCount = new Map<string, number>();
   for (const cls of model.classes) {
-    const visibleAttrs = cls.attributes.filter((a) => !hideMember(a, viewMode));
-    const visibleMethods = cls.methods.filter((m) => !hideMember(m, viewMode));
-    const rows = visibleAttrs.length + visibleMethods.length;
-    const height = Math.max(72, 64 + rows * 21);
-    graph.setNode(cls.id, { width, height });
+    if (cls.parentId) childCount.set(cls.parentId, (childCount.get(cls.parentId) ?? 0) + 1);
+  }
+  const isContainer = (id: string) => childCount.has(id);
+
+  for (const cls of model.classes) {
+    // Container groups get a larger placeholder; dagre will expand to fit children
+    if (isContainer(cls.id)) {
+      graph.setNode(cls.id, { width: width + 48, height: 120, label: cls.name });
+    } else {
+      const visibleAttrs = cls.attributes.filter((a) => !hideMember(a, viewMode));
+      const visibleMethods = cls.methods.filter((m) => !hideMember(m, viewMode));
+      const rows = visibleAttrs.length + visibleMethods.length;
+      const height = Math.max(72, 64 + rows * 21);
+      graph.setNode(cls.id, { width, height });
+    }
+  }
+  // Parent-child for compound layout
+  for (const cls of model.classes) {
+    if (cls.parentId && childCount.has(cls.parentId)) {
+      // Only set parent if the parent actually exists as a node (it should, as container)
+      if (model.classes.some((c) => c.id === cls.parentId)) {
+        graph.setParent(cls.id, cls.parentId);
+      }
+    }
   }
   for (const link of model.links) {
     graph.setEdge(link.from, link.to);
@@ -94,12 +119,40 @@ export function layoutModel(model: UMLModel, viewMode: ViewMode, direction: "LR"
 
   const nodes: UMLFlowNode[] = model.classes.map((cls) => {
     const pos = graph.node(cls.id) as { x: number; y: number } | undefined;
-    const height = graph.node(cls.id).height as number | undefined;
-    return buildNode(
+    const nodeHeight = graph.node(cls.id).height as number | undefined;
+    const nodeWidth = graph.node(cls.id).width as number | undefined;
+    if (isContainer(cls.id)) {
+      const w = nodeWidth ?? width + 48;
+      const h = nodeHeight ?? 120;
+      return {
+        id: cls.id,
+        type: "c4-group",
+        position: { x: (pos?.x ?? 0) - w / 2, y: (pos?.y ?? 0) - h / 2 },
+        data: {
+          label: cls.name,
+          childCount: childCount.get(cls.id) ?? 0,
+          stereotype: cls.stereotype,
+          parentId: cls.parentId ?? null,
+          isAbstract: cls.isAbstract,
+          isInterface: cls.isInterface,
+          kind: inferNodeKind(cls.name, cls.stereotype),
+          attributes: [],
+          methods: [],
+          viewMode,
+        },
+        style: { width: w, height: h },
+      } as UMLFlowNode;
+    }
+    const node = buildNode(
       cls,
-      { x: (pos?.x ?? 0) - width / 2, y: (pos?.y ?? 0) - (height ?? 72) / 2 },
+      { x: (pos?.x ?? 0) - width / 2, y: (pos?.y ?? 0) - (nodeHeight ?? 72) / 2 },
       viewMode
     );
+    if (cls.parentId && childCount.has(cls.parentId)) {
+      (node as unknown as { parentId?: string }).parentId = cls.parentId;
+      (node as unknown as { extent?: string }).extent = "parent";
+    }
+    return node;
   });
 
   const edges: UMLFlowEdge[] = model.links.map((link) => ({
@@ -124,6 +177,7 @@ export function flowToModel(nodes: UMLFlowNode[], edges: UMLFlowEdge[], fallback
     id: node.id,
     name: node.data.label,
     stereotype: node.data.stereotype,
+    parentId: node.data.parentId ?? null,
     attributes: node.data.attributes,
     methods: node.data.methods,
     isAbstract: node.data.isAbstract,

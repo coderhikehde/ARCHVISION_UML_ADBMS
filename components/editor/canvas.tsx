@@ -14,6 +14,7 @@ import {
   type NodeChange,
   type EdgeChange,
   type Connection,
+  type NodeTypes,
   type OnSelectionChangeParams,
   type XYPosition,
 } from "@xyflow/react";
@@ -38,14 +39,15 @@ interface CanvasProps {
   engine: DiagramEngine;
 }
 
-const NODE_TYPES = {
-  uml: React.lazy(() => import("@/components/editor/uml-shapes")),
+const NODE_TYPES: NodeTypes = {
+  uml: React.lazy(() => import("@/components/editor/uml-shapes")) as unknown as NodeTypes["uml"],
   "actor-node": React.lazy(() =>
     import("@/components/editor/uml-node").then((m) => ({ default: m.UMLActorNodeComponent }))
-  ),
+  ) as unknown as NodeTypes["uml"],
   "database-node": React.lazy(() =>
     import("@/components/editor/uml-node").then((m) => ({ default: m.UMLDatabaseNodeComponent }))
-  ),
+  ) as unknown as NodeTypes["uml"],
+  "c4-group": React.lazy(() => import("@/components/editor/c4-group-node")) as unknown as NodeTypes["uml"],
 };
 
 const EDGE_TYPES = {
@@ -1044,6 +1046,10 @@ function CanvasInner({ diagramId, engine }: CanvasProps): React.ReactElement {
           fitViewOptions={{ padding: 0.2, duration: 600 }}
           onSelectionChange={onSelectionChange}
           onConnect={onConnect}
+          onNodeDoubleClick={(_, node) => {
+            // C4 drill-down: double-clicking a container focuses its subtree.
+            if (engine.canDrillInto(node.id)) engine.drillDown(node.id);
+          }}
           onNodesDelete={onNodesDelete}
           onEdgesDelete={onEdgesDelete}
           onDragOver={onDragOver}
@@ -1076,7 +1082,7 @@ function CanvasInner({ diagramId, engine }: CanvasProps): React.ReactElement {
             nodeColor={(node) => {
               const data = (node as UMLFlowNode).data;
               if (data?.isInterface) return "#93C5FD";
-              if (data?.isAbstract) return "#FDE68A";
+              if (data?.isAbstract) return "#99F6E4";
               return "#DBEAFE";
             }}
           />
@@ -1093,7 +1099,7 @@ function CanvasInner({ diagramId, engine }: CanvasProps): React.ReactElement {
                     cx={sx}
                     cy={sy}
                     r={11}
-                    fill="#F59E0B"
+                    fill="#14B8A6"
                     stroke="#fff"
                     strokeWidth={2}
                     className="cursor-pointer drop-shadow-sm"

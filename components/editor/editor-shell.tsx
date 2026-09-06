@@ -2,13 +2,13 @@
 
 import * as React from "react";
 import { AnimatePresence } from "framer-motion";
-import { Loader2, Boxes } from "lucide-react";
+import { Loader2, Boxes, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/layout/navbar";
 import { CommandPalette } from "@/components/layout/command-palette";
 import { Toolbar } from "@/components/editor/toolbar";
 import { Canvas } from "@/components/editor/canvas";
-import { PaletteSidebar } from "@/components/editor/palette-sidebar";
+import { PaletteSidebar, MY_TEMPLATES_KEY } from "@/components/editor/palette-sidebar";
 import { PropertiesPanel } from "@/components/editor/properties-panel";
 import { MonacoPanel } from "@/components/editor/monaco-panel";
 import { AISidebar } from "@/components/editor/ai-sidebar";
@@ -16,6 +16,8 @@ import { ValidationPanel } from "@/components/editor/validation-panel";
 import { AnalysisOverlay } from "@/components/editor/analysis-overlay";
 import { CodeGenModal } from "@/components/editor/codegen-modal";
 import { DocsModal } from "@/components/editor/docs-modal";
+import { ReportModal } from "@/components/editor/report-modal";
+import { AdrPanel } from "@/components/editor/adr-panel";
 import { MermaidRenderer } from "@/components/editor/mermaid-renderer";
 import { VersionHistoryModal } from "@/components/editor/version-history-modal";
 import { AIGenerateModal } from "@/components/editor/ai-generate-modal";
@@ -164,12 +166,20 @@ export function EditorShell({
       await exportDiagram(format as ExportFormat, container, engine.model, {
         filename: `${engine.name.replace(/\s+/g, "-").toLowerCase()}`,
       });
-      await storage.saveValidation(diagramId, engine.validation ?? { issues: [], score: 100 });
     } catch (err) {
       console.error("Export failed", err);
       toast("error", err instanceof Error ? `Export failed: ${err.message}` : "Export failed");
+      return;
     } finally {
       setExporting(null);
+    }
+    // Persisting the report is a separate concern — its failure must not
+    // claim the export itself failed.
+    try {
+      await storage.saveValidation(diagramId, engine.validation ?? { issues: [], score: 100 });
+    } catch (err) {
+      console.warn("Validation report not saved", err);
+      toast("error", "Diagram exported, but the validation report couldn't be saved");
     }
   };
 
@@ -218,11 +228,48 @@ export function EditorShell({
             onExport={(f) => void handleExport(f)}
             codePanelOpen={ui.codePanelOpen}
             onToggleCodePanel={() => ui.setCodePanelOpen(!ui.codePanelOpen)}
+            paletteOpen={paletteOpen}
+            onTogglePalette={() => setPaletteOpen((open) => !open)}
             engine={engine}
             commentCount={commentCount}
           />
         </div>
       </div>
+
+      {engine.breadcrumb.length > 0 ? (
+        <nav
+          aria-label="Diagram hierarchy"
+          className="flex shrink-0 items-center gap-0.5 border-b border-line bg-surface px-4 py-1.5 text-[12px]"
+        >
+          <button
+            type="button"
+            onClick={() => engine.drillUpTo(null)}
+            className="rounded-md px-1.5 py-0.5 font-semibold text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
+          >
+            All levels
+          </button>
+          {engine.breadcrumb.map((crumb, i) => {
+            const last = i === engine.breadcrumb.length - 1;
+            return (
+              <span key={crumb.id} className="flex items-center gap-0.5">
+                <span className="text-slate-300">/</span>
+                {last ? (
+                  <span className="rounded-md bg-primary/10 px-1.5 py-0.5 font-bold text-primary">{crumb.name}</span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => engine.drillUpTo(crumb.id)}
+                    className="rounded-md px-1.5 py-0.5 font-semibold text-muted-foreground transition-colors hover:bg-primary/5 hover:text-primary"
+                  >
+                    {crumb.name}
+                  </button>
+                )}
+              </span>
+            );
+          })}
+          <span className="ml-2 text-[11px] text-muted-foreground">double-click a container to drill in</span>
+        </nav>
+      ) : null}
 
       <div className="flex min-h-0 flex-1">
         <div className="relative min-w-0 flex-1 bg-[radial-gradient(circle_at_1px_1px,rgba(15,23,42,0.08)_1px,transparent_0)] bg-[size:24px_24px]">
@@ -244,19 +291,30 @@ export function EditorShell({
               }}
               onSaveTemplate={(code) => {
                 try {
-                  const existing = JSON.parse(window.localStorage.getItem("archvision:my-templates") ?? "[]") as Array<{ id: string; name: string; code: string }>;
+                  const existing = JSON.parse(window.localStorage.getItem(MY_TEMPLATES_KEY) ?? "[]") as Array<{ id: string; name: string; code: string }>;
                   const entry = {
                     id: `t_${Date.now().toString(36)}`,
                     name: engine.name,
                     code,
                   };
-                  window.localStorage.setItem("archvision:my-templates", JSON.stringify([entry, ...existing]));
+                  window.localStorage.setItem(MY_TEMPLATES_KEY, JSON.stringify([entry, ...existing]));
                 } catch {
                   /* storage unavailable */
                 }
               }}
               mermaidCode={engine.mermaidCode}
             />
+          ) : null}
+          {isClassModel && !paletteOpen ? (
+            <button
+              type="button"
+              onClick={() => setPaletteOpen(true)}
+              aria-label="Show shape palette (Ctrl B)"
+              title="Show shape palette (Ctrl B)"
+              className="absolute left-3 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-xl border border-line bg-white/90 text-slate-500 shadow-card backdrop-blur transition-all duration-200 hover:border-primary/40 hover:text-primary"
+            >
+              <PanelLeft className="h-4 w-4" />
+            </button>
           ) : null}
           {isClassModel ? <PropertiesPanel engine={engine} /> : null}
 
@@ -343,6 +401,13 @@ export function EditorShell({
         diagramName={engine.name}
         architecture={engine.architecture}
       />
+      <ReportModal
+        open={ui.reportOpen}
+        onOpenChange={ui.setReportOpen}
+        diagramId={engine.diagramId}
+        diagramName={engine.name}
+        architecture={engine.architecture}
+      />
       <VersionHistoryModal
         open={ui.versionOpen}
         onOpenChange={ui.setVersionOpen}
@@ -350,6 +415,13 @@ export function EditorShell({
         onSaveNow={(label) => engine.saveVersionNow(label)}
         onRestore={(version) => engine.restoreVersion(version)}
         onCloseAfterRestore={() => ui.setVersionOpen(false)}
+      />
+      <AdrPanel
+        open={ui.adrsOpen}
+        onClose={() => ui.setAdrsOpen(false)}
+        diagramId={engine.diagramId}
+        diagramName={engine.name}
+        nodeNames={engine.architecture.nodes.map((n) => n.name)}
       />
       <CommandPalette />
     </main>

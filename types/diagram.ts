@@ -34,6 +34,8 @@ export interface UMLClass {
   id: string;
   name: string;
   stereotype: string | null;
+  /** Enclosing Mermaid namespace (C4 container), or null at top level. */
+  parentId: string | null;
   attributes: UMLAttribute[];
   methods: UMLMethod[];
   isAbstract: boolean;
@@ -384,6 +386,8 @@ export interface ArchitectureNode {
   name: string;
   kind: ArchitectureNodeKind;
   stereotype: string | null;
+  /** C4 hierarchy — id of the enclosing container node (Mermaid namespace), or null at top level. */
+  parentId: string | null;
   attributes: ArchitectureAttribute[];
   methods: ArchitectureMethod[];
   isAbstract: boolean;

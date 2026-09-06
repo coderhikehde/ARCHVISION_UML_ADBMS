@@ -24,10 +24,13 @@ export interface NodeEditPatch {
   name?: string;
   kind?: ArchitectureNodeKind;
   stereotype?: string | null;
+  /** C4 container reparenting (null = move to top level). */
+  parentId?: string | null;
   isAbstract?: boolean;
   isInterface?: boolean;
   attributes?: ArchitectureAttribute[];
   methods?: ArchitectureMethod[];
+  notes?: string[];
   style?: {
     fill?: string;
     border?: string;
@@ -124,9 +127,18 @@ const UML_SHAPE_STEREOTYPE_KINDS = new Set<ArchitectureNodeKind>([
 ]);
 
 /** Add a node. Returns the new node (id === name). */
-export function addArchitectureNode(arch: Architecture, kind: ArchitectureNodeKind, baseName?: string): { arch: Architecture; node: ArchitectureNode } {
+export function addArchitectureNode(
+  arch: Architecture,
+  kind: ArchitectureNodeKind,
+  baseName?: string,
+  opts?: { parentId?: string | null }
+): { arch: Architecture; node: ArchitectureNode } {
   const name = uniqueNodeName(arch, sanitizeNodeName(baseName ?? kindName(kind)));
   const node = nodeFromKind(name, kind);
+  // Only attach when the container actually exists — never orphan a node.
+  if (opts?.parentId && arch.nodes.some((n) => n.id === opts.parentId)) {
+    node.parentId = opts.parentId;
+  }
   return { arch: { ...arch, nodes: [...arch.nodes, node] }, node };
 }
 
@@ -223,6 +235,12 @@ export function updateArchitectureNode(arch: Architecture, id: string, patch: No
     next.id = next.name;
   }
   if (patch.stereotype !== undefined) next.stereotype = patch.stereotype;
+  if (patch.parentId !== undefined) {
+    // Reparenting guard: never allow self- or descendant-containment cycles.
+    next.parentId = patch.parentId && patch.parentId !== id && arch.nodes.some((n) => n.id === patch.parentId)
+      ? patch.parentId
+      : null;
+  }
   if (patch.isAbstract !== undefined) next.isAbstract = patch.isAbstract;
   if (patch.isInterface !== undefined) next.isInterface = patch.isInterface;
   if (patch.kind !== undefined) {
@@ -253,6 +271,7 @@ export function updateArchitectureNode(arch: Architecture, id: string, patch: No
   }
   if (patch.attributes !== undefined) next.attributes = patch.attributes;
   if (patch.methods !== undefined) next.methods = patch.methods;
+  if (patch.notes !== undefined) next.notes = patch.notes;
   if (patch.style !== undefined) next.style = patch.style;
 
   const nodes = arch.nodes.map((n) => (n.id === id ? next : n));

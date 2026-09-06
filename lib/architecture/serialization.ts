@@ -41,7 +41,9 @@ export function toER(arch: Architecture): string {
         attr.isUnique ? "UK" : null,
       ].filter(Boolean) as string[];
       const suffix = markers.length > 0 ? ` ${markers.join(" ")}` : "";
-      lines.push(`        ${attr.name} ${attr.type}${suffix}`);
+      // Official Mermaid ER attribute grammar is "<type> <name> [PK|FK|UK]"
+      // — writing "<name> <type>" made every text round-trip swap them.
+      lines.push(`        ${attr.type} ${attr.name}${suffix}`);
     }
     lines.push("    }");
     lines.push("");

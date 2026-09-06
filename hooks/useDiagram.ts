@@ -8,12 +8,18 @@ import { validateArchitecture } from "@/lib/architecture/validate";
 import { architectureToMermaid, architectureToLegacyForCanvas } from "@/lib/architecture/serialization";
 import { architectureToLegacy } from "@/lib/architecture/model";
 import { layoutModel, type UMLFlowEdge, type UMLFlowNode } from "@/lib/mermaid/transformer";
-import { storage } from "@/lib/data/storage";
+import { storage, StorageApiError } from "@/lib/data/storage";
 import { debounce } from "@/lib/utils";
+import { toast } from "@/components/ui/toast";
 import type { DiagramVersion } from "@/lib/architecture/versions";
 import { createVersion } from "@/lib/architecture/versions";
 import type { ArchitectureChange } from "@/lib/architecture/transforms";
 import { applyChanges } from "@/lib/architecture/transforms";
+import {
+  ancestorChain,
+  canDrillInto as canDrillIntoHierarchy,
+  focusArchitecture,
+} from "@/lib/architecture/hierarchy";
 import type { ArchitectureNodeKind, ArchitectureRelationshipType } from "@/types/diagram";
 import type { NodeEditPatch, RelationshipEditPatch } from "@/lib/architecture/editing";
 import {
@@ -34,10 +40,12 @@ export interface EditorUIState {
   docsOpen: boolean;
   versionOpen: boolean;
   shareOpen: boolean;
+  reportOpen: boolean;
   aiGenerateOpen: boolean;
   importOpen: boolean;
   commentsOpen: boolean;
   cheatSheetOpen: boolean;
+  adrsOpen: boolean;
   setSidePanel: (panel: EditorUIState["sidePanel"]) => void;
   setCodePanelOpen: (open: boolean) => void;
   setAnalysisOpen: (open: boolean) => void;
@@ -46,10 +54,12 @@ export interface EditorUIState {
   setDocsOpen: (open: boolean) => void;
   setVersionOpen: (open: boolean) => void;
   setShareOpen: (open: boolean) => void;
+  setReportOpen: (open: boolean) => void;
   setAiGenerateOpen: (open: boolean) => void;
   setImportOpen: (open: boolean) => void;
   setCommentsOpen: (open: boolean) => void;
   setCheatSheetOpen: (open: boolean) => void;
+  setAdrsOpen: (open: boolean) => void;
 }
 
 export const useEditorUI = create<EditorUIState>((set) => ({
@@ -61,10 +71,12 @@ export const useEditorUI = create<EditorUIState>((set) => ({
   docsOpen: false,
   versionOpen: false,
   shareOpen: false,
+  reportOpen: false,
   aiGenerateOpen: false,
   importOpen: false,
   commentsOpen: false,
   cheatSheetOpen: false,
+  adrsOpen: false,
   setSidePanel: (sidePanel) => set({ sidePanel }),
   setCodePanelOpen: (codePanelOpen) => set({ codePanelOpen }),
   setAnalysisOpen: (analysisOpen) => set({ analysisOpen }),
@@ -73,10 +85,12 @@ export const useEditorUI = create<EditorUIState>((set) => ({
   setDocsOpen: (docsOpen) => set({ docsOpen }),
   setVersionOpen: (versionOpen) => set({ versionOpen }),
   setShareOpen: (shareOpen) => set({ shareOpen }),
+  setReportOpen: (reportOpen) => set({ reportOpen }),
   setAiGenerateOpen: (aiGenerateOpen) => set({ aiGenerateOpen }),
   setImportOpen: (importOpen) => set({ importOpen }),
   setCommentsOpen: (commentsOpen) => set({ commentsOpen }),
   setCheatSheetOpen: (cheatSheetOpen) => set({ cheatSheetOpen }),
+  setAdrsOpen: (adrsOpen) => set({ adrsOpen }),
 }));
 
 export interface DiagramEngine {
@@ -125,6 +139,14 @@ export interface DiagramEngine {
   redo: () => void;
   isSaving: boolean;
   lastSaved: Date | null;
+  /* ---- C4 hierarchy drill-down (Epic 2) ---- */
+  /** Focused container id, or null for the full model. */
+  focusNodeId: string | null;
+  /** Ancestor chain ending at the focused node — breadcrumb order. */
+  breadcrumb: Array<{ id: string; name: string }>;
+  canDrillInto: (nodeId: string) => boolean;
+  drillDown: (nodeId: string) => void;
+  drillUpTo: (nodeId: string | null) => void;
 }
 
 const HISTORY_LIMIT = 50;
@@ -146,12 +168,19 @@ export function useDiagram(diagramId: string): DiagramEngine {
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  /** C4 drill-down focus — null shows the whole model. */
+  const [focusId, setFocusId] = useState<string | null>(null);
   const historyRef = useRef<string[]>([]);
   const historyIndexRef = useRef(-1);
 
   const persistRef = useRef(true);
   const hydratedRef = useRef(false);
   const mermaidCodeRef = useRef("");
+  /** Optimistic-concurrency token from the last known server state. */
+  const updatedAtRef = useRef<string | null>(null);
+  /** Last payload confirmed persisted — dedupes autosave after explicit saves. */
+  const lastPersistedRef = useRef<{ code: string; viewMode: ViewMode } | null>(null);
+  const lastErrorToastAtRef = useRef(0);
 
   useEffect(() => {
     mermaidCodeRef.current = mermaidCode;
@@ -197,6 +226,8 @@ export function useDiagram(diagramId: string): DiagramEngine {
       setType(diagram.type);
       setMode(diagram.viewMode);
       setMermaidCodeState(diagram.mermaidCode);
+      updatedAtRef.current = diagram.updatedAt;
+      lastPersistedRef.current = { code: diagram.mermaidCode, viewMode: diagram.viewMode };
       setVersions(await storage.listVersions(diagramId));
       setReady(true);
     })();
@@ -205,19 +236,71 @@ export function useDiagram(diagramId: string): DiagramEngine {
     };
   }, [diagramId]);
 
-  const persist = useCallback(
-    debounce((code: string, viewMode: ViewMode) => {
-      if (!persistRef.current || !hydratedRef.current) return;
-      setIsSaving(true);
-      void storage
-        .updateDiagram(diagramId, { mermaidCode: code, viewMode })
-        .then(() => {
-          setLastSaved(new Date());
-          setIsSaving(false);
-        })
-        .catch(() => setIsSaving(false));
-    }, 600),
-    [diagramId]
+  const warnSaveFailure = useCallback((err: unknown): void => {
+    console.warn("[editor] save failed", err);
+    const now = Date.now();
+    if (now - lastErrorToastAtRef.current < 10_000) return; // throttle
+    lastErrorToastAtRef.current = now;
+    toast("error", err instanceof Error && err.message ? `Couldn't save: ${err.message}` : "Couldn't save your changes");
+  }, []);
+
+  /**
+   * PATCH the server carrying the optimistic-concurrency token. On a lost
+   * race (409 conflict) the freshest token is fetched and the write is
+   * retried once — the client's code is the newest intent, so after one
+   * re-sync this session's edit wins. Returns true when persisted.
+   */
+  const savePatch = useCallback(
+    async (patch: { name?: string; mermaidCode?: string; viewMode?: ViewMode }): Promise<boolean> => {
+      const attempt = (): ReturnType<typeof storage.updateDiagram> =>
+        storage.updateDiagram(diagramId, {
+          ...patch,
+          ...(updatedAtRef.current ? { expectedUpdatedAt: updatedAtRef.current } : {}),
+        });
+      try {
+        let updated: Awaited<ReturnType<typeof storage.updateDiagram>>;
+        try {
+          updated = await attempt();
+        } catch (err) {
+          if (!(err instanceof StorageApiError) || err.code !== "conflict") throw err;
+          const fresh = await storage.getDiagram(diagramId);
+          if (!fresh) return false; // deleted elsewhere — nothing to save into
+          updatedAtRef.current = fresh.updatedAt;
+          updated = await attempt();
+        }
+        if (updated) updatedAtRef.current = updated.updatedAt;
+        if (patch.mermaidCode !== undefined || patch.viewMode !== undefined) {
+          lastPersistedRef.current = {
+            code: patch.mermaidCode ?? mermaidCodeRef.current,
+            viewMode: patch.viewMode ?? lastPersistedRef.current?.viewMode ?? "ENGINEERING",
+          };
+        } else if (updated) {
+          lastPersistedRef.current = { code: updated.mermaidCode, viewMode: updated.viewMode };
+        }
+        return true;
+      } catch (err) {
+        warnSaveFailure(err);
+        return false;
+      }
+    },
+    [diagramId, warnSaveFailure]
+  );
+
+  const persist = useMemo(
+    () =>
+      debounce((code: string, viewMode: ViewMode) => {
+        if (!persistRef.current || !hydratedRef.current) return;
+        // Skip when this exact payload is already on the server — explicit
+        // saves (applyChanges/restore/undo) trigger the autosave effect too.
+        if (lastPersistedRef.current?.code === code && lastPersistedRef.current.viewMode === viewMode) return;
+        setIsSaving(true);
+        void savePatch({ mermaidCode: code, viewMode })
+          .then((ok) => {
+            if (ok) setLastSaved(new Date());
+          })
+          .finally(() => setIsSaving(false));
+      }, 600),
+    [savePatch]
   );
 
   /* canonical model — single source of truth, derived from mermaid text */
@@ -226,11 +309,20 @@ export function useDiagram(diagramId: string): DiagramEngine {
     return { architecture, error };
   }, [mermaidCode]);
 
+  // Drill-down is a pure view filter: layout/canvas show the focused
+  // subtree, while validation and analysis keep operating on the FULL model.
+  const visibleArchitecture = useMemo(() => focusArchitecture(architecture, focusId), [architecture, focusId]);
+
+  // A focus target that no longer exists (deleted/renamed/undo) resets the view.
+  useEffect(() => {
+    if (focusId && !architecture.nodes.some((n) => n.id === focusId)) setFocusId(null);
+  }, [architecture, focusId]);
+
   useEffect(() => {
     setParseError(error);
   }, [error]);
 
-  const model = useMemo(() => architectureToLegacy(architecture), [architecture]);
+  const model = useMemo(() => architectureToLegacy(visibleArchitecture), [visibleArchitecture]);
 
   const { nodes, edges } = useMemo(
     () => layoutModel(model as Parameters<typeof layoutModel>[0], viewMode, "LR"),
@@ -246,8 +338,12 @@ export function useDiagram(diagramId: string): DiagramEngine {
     if (persistRef.current && hydratedRef.current) persist(mermaidCode, viewMode);
   }, [mermaidCode, viewMode, persist]);
 
-  const refreshVersions = useCallback(() => {
-    void storage.listVersions(diagramId).then(setVersions);
+  const refreshVersions = useCallback(async (): Promise<void> => {
+    try {
+      setVersions(await storage.listVersions(diagramId));
+    } catch {
+      // Keep showing the current list on a transient read failure.
+    }
   }, [diagramId]);
 
   const applyDiagram = useCallback((code: string) => {
@@ -285,13 +381,14 @@ export function useDiagram(diagramId: string): DiagramEngine {
 
   const addNode = useCallback(
     (kind: ArchitectureNodeKind, name?: string): string | null => {
-      const { arch, node } = addArchitectureNode(architecture, kind, name);
+      // New nodes land inside the currently focused container (C4 context).
+      const { arch, node } = addArchitectureNode(architecture, kind, name, { parentId: focusId });
       commitArchitecture(arch);
       setSelectedNodeId(node.id);
       setSelectedEdgeId(null);
       return node.id;
     },
-    [architecture, commitArchitecture]
+    [architecture, commitArchitecture, focusId]
   );
 
   const updateNode = useCallback(
@@ -381,13 +478,22 @@ export function useDiagram(diagramId: string): DiagramEngine {
       const next = applyChanges(current, changes);
       const code = architectureToMermaid(next);
       const nextVersion = createVersion(versions[0] ?? null, code, current, next, label);
-      void storage.saveVersion(diagramId, nextVersion);
-      void storage.updateDiagram(diagramId, { mermaidCode: code });
       persistRef.current = true;
       setMermaidCode(code);
-      void refreshVersions();
+      // Persist explicitly (snapshot + code), then refresh — awaiting the
+      // writes guarantees the version list can't resolve before the commit.
+      void (async () => {
+        try {
+          await storage.saveVersion(diagramId, nextVersion);
+          await savePatch({ mermaidCode: code });
+          setLastSaved(new Date());
+        } catch (err) {
+          warnSaveFailure(err);
+        }
+        await refreshVersions();
+      })();
     },
-    [diagramId, mermaidCode, versions, refreshVersions]
+    [diagramId, mermaidCode, versions, savePatch, warnSaveFailure, refreshVersions]
   );
 
   const saveVersionNow = useCallback(
@@ -395,10 +501,17 @@ export function useDiagram(diagramId: string): DiagramEngine {
       const current = parseArchitectureDiagram(mermaidCode).architecture;
       const previous = versions[0] ?? null;
       const version = createVersion(previous, mermaidCode, null, current, label);
-      void storage.saveVersion(diagramId, version);
-      void refreshVersions();
+      void (async () => {
+        try {
+          await storage.saveVersion(diagramId, version);
+          setLastSaved(new Date());
+        } catch (err) {
+          warnSaveFailure(err);
+        }
+        await refreshVersions();
+      })();
     },
-    [diagramId, mermaidCode, versions, refreshVersions]
+    [diagramId, mermaidCode, versions, warnSaveFailure, refreshVersions]
   );
 
   const restoreVersion = useCallback(
@@ -413,10 +526,18 @@ export function useDiagram(diagramId: string): DiagramEngine {
         restored,
         `Restored ${version.label}`
       );
-      void storage.saveVersion(diagramId, entry);
-      void refreshVersions();
+      void (async () => {
+        try {
+          await storage.saveVersion(diagramId, entry);
+          await savePatch({ mermaidCode: version.mermaidCode });
+          setLastSaved(new Date());
+        } catch (err) {
+          warnSaveFailure(err);
+        }
+        await refreshVersions();
+      })();
     },
-    [diagramId, mermaidCode, versions, refreshVersions]
+    [diagramId, mermaidCode, versions, savePatch, warnSaveFailure, refreshVersions]
   );
 
   return {
@@ -458,5 +579,18 @@ export function useDiagram(diagramId: string): DiagramEngine {
     redo,
     isSaving,
     lastSaved,
+    focusNodeId: focusId,
+    breadcrumb: useMemo(
+      () => (focusId ? ancestorChain(architecture, focusId).map((n) => ({ id: n.id, name: n.name })) : []),
+      [architecture, focusId]
+    ),
+    canDrillInto: useCallback((nodeId: string) => canDrillIntoHierarchy(architecture, nodeId), [architecture]),
+    drillDown: useCallback(
+      (nodeId: string) => {
+        if (canDrillIntoHierarchy(architecture, nodeId)) setFocusId(nodeId);
+      },
+      [architecture]
+    ),
+    drillUpTo: useCallback((nodeId: string | null) => setFocusId(nodeId), []),
   };
 }

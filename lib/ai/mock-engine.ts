@@ -67,6 +67,7 @@ function classFrom(name: string, attributes: Map<string, UMLAttribute[]>, method
     id: name,
     name,
     stereotype: null,
+    parentId: null,
     attributes: (attributes.get(name) ?? []).filter((a, i, all) => all.findIndex((x) => x.name === a.name) === i),
     methods: (methods.get(name) ?? []).filter((m, i, all) => all.findIndex((x) => x.name === m.name) === i),
     isAbstract: false,

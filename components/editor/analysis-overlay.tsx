@@ -17,13 +17,13 @@ interface AnalysisOverlayProps {
 
 const METRIC_COLOR: Record<AnalysisMetric["severity"], string> = {
   critical: "bg-error",
-  warning: "bg-amber-400",
+  warning: "bg-warning",
   info: "bg-primary",
 };
 
 const SEVERITY_BADGE: Record<AnalysisMetric["severity"], string> = {
   critical: "bg-red-50 text-error border-red-200",
-  warning: "bg-amber-50 text-amber-600 border-amber-200",
+  warning: "bg-amber-50 text-amber-700 border-amber-200",
   info: "bg-primary-50 text-primary-deep border-primary-100",
 };
 
@@ -162,9 +162,9 @@ export function AnalysisOverlay({ open, onClose, model }: AnalysisOverlayProps):
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: 0.4 + index * 0.05 }}
-                      className="flex gap-2.5 rounded-xl border border-amber-200/70 bg-accent-soft/50 px-4 py-2.5 text-[12.5px] leading-relaxed text-[#92400E]"
+                      className="flex gap-2.5 rounded-xl border border-accent-200/70 bg-accent-soft/50 px-4 py-2.5 text-[12.5px] leading-relaxed text-teal-900"
                     >
-                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-amber-400" />
+                      <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full bg-accent-400" />
                       {refactoring}
                     </motion.li>
                   ))}

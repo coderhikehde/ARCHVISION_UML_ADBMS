@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Trash2, Plus } from "lucide-react";
+import { Loader2, Sparkles, Trash2, Plus } from "lucide-react";
 import type { ArchitectureRelationshipType, ArchitectureNodeKind, Visibility } from "@/types/diagram";
 import { VALID_MULTIPLICITIES } from "@/types/diagram";
 import {
@@ -14,9 +14,14 @@ import {
   type NodeEditPatch,
   type RelationshipEditPatch,
 } from "@/lib/architecture/editing";
+import { describeNode, describeNodeLocal } from "@/lib/ai/describe";
+import { CLOUD_SERVICES, PROVIDER_LABELS, serviceIconForStereotype } from "@/lib/architecture/cloud-icons";
+import { descendantsOf } from "@/lib/architecture/hierarchy";
+import { adrsForNode, useAdrsStore } from "@/lib/editor/adrs";
+import { ScrollText } from "lucide-react";
 import { RELATION_SPECS_EXTENDED, RELATION_TYPE_ORDER } from "@/lib/editor/relations";
 import { cn } from "@/lib/utils";
-import type { DiagramEngine } from "@/hooks/useDiagram";
+import { useEditorUI, type DiagramEngine } from "@/hooks/useDiagram";
 
 interface PropertiesPanelProps {
   engine: DiagramEngine;
@@ -139,12 +144,54 @@ function SectionLabel({ children }: { children: React.ReactNode }): React.ReactE
   );
 }
 
+/** Read-only chips for ADRs bound to this node; opens the ADR panel on demand. */
+function NodeAdrChips({ diagramId, nodeName }: { diagramId: string; nodeName: string }): React.ReactElement | null {
+  const adrs = useAdrsStore((s) => s.adrs);
+  const setAdrsOpen = useEditorUI((s) => s.setAdrsOpen);
+  const linked = adrsForNode(adrs, diagramId, nodeName);
+  if (linked.length === 0) return null;
+  return (
+    <div className="mt-3 space-y-1">
+      {linked.map((adr) => (
+        <button
+          key={adr.id}
+          type="button"
+          onClick={() => setAdrsOpen(true)}
+          className="flex w-full items-center gap-1.5 rounded-lg border border-line bg-surface px-2 py-1.5 text-left text-[11px] font-semibold text-muted-foreground transition-colors hover:border-primary/30 hover:text-primary"
+          title="Open architecture decisions"
+        >
+          <ScrollText className="h-3 w-3 shrink-0" />
+          <span className="truncate">
+            ADR {adr.number}. {adr.title}
+          </span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function NodeEditor({ engine }: { engine: DiagramEngine }): React.ReactElement | null {
   const node = engine.architecture.nodes.find((n) => n.id === engine.selectedNodeId);
+  const [describing, setDescribing] = React.useState(false);
+  const [describeMode, setDescribeMode] = React.useState<"online" | "offline" | null>(null);
   if (!node) return null;
 
   const patch = (p: NodeEditPatch): void => {
     engine.updateNode(node.id, p);
+  };
+
+  const generateDescription = async (): Promise<void> => {
+    setDescribing(true);
+    try {
+      const result = await describeNode(node, engine.architecture);
+      patch({ notes: [result.text] });
+      setDescribeMode(result.mode);
+    } catch {
+      patch({ notes: [describeNodeLocal(node, engine.architecture)] });
+      setDescribeMode("offline");
+    } finally {
+      setDescribing(false);
+    }
   };
 
   const setAttributes = (attributes: typeof node.attributes): void => patch({ attributes: attributes.map((a) => ({ ...a })) });
@@ -164,6 +211,7 @@ function NodeEditor({ engine }: { engine: DiagramEngine }): React.ReactElement |
       </div>
 
       <SectionLabel>Identity</SectionLabel>
+      <NodeAdrChips diagramId={engine.diagramId} nodeName={node.name} />
       <div className="space-y-2">
         <TextInput
           ariaLabel="Node name"
@@ -183,7 +231,88 @@ function NodeEditor({ engine }: { engine: DiagramEngine }): React.ReactElement |
           onChange={(v) => patch({ stereotype: v.trim() ? v : null })}
           placeholder="Stereotype (e.g. entity, service)"
         />
+        <Select
+          ariaLabel="Contained in"
+          value={node.parentId ?? ""}
+          onChange={(v) => patch({ parentId: v || null })}
+          options={[
+            { value: "", label: "Top level (no container)" },
+            ...engine.architecture.nodes
+              .filter(
+                (n) =>
+                  n.id !== node.id &&
+                  !descendantsOf(engine.architecture, node.id).some((d) => d.id === n.id)
+              )
+              .map((n) => ({ value: n.id, label: n.name })),
+          ]}
+        />
+        <div>
+          <p className="mb-1 mt-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Cloud service icon
+          </p>
+          <div className="grid grid-cols-2 gap-1" role="listbox" aria-label="Cloud service icon">
+            {CLOUD_SERVICES.map((service) => {
+              const active = serviceIconForStereotype(node.stereotype)?.id === service.id;
+              const Glyph = service.icon;
+              return (
+                <button
+                  key={service.id}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  title={`${PROVIDER_LABELS[service.provider]} · ${service.label}`}
+                  onClick={() => patch({ stereotype: active ? null : service.id })}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-lg border px-1.5 py-1 text-left text-[10.5px] font-semibold transition-colors",
+                    active
+                      ? "border-primary/40 bg-primary/5 text-primary"
+                      : "border-line bg-white text-muted-foreground hover:border-primary/30 hover:text-foreground"
+                  )}
+                >
+                  <span
+                    className="flex h-4 w-4 shrink-0 items-center justify-center rounded"
+                    style={{ backgroundColor: `${service.color}1A` }}
+                  >
+                    <Glyph className="h-3 w-3" style={{ color: service.color }} aria-hidden />
+                  </span>
+                  <span className="truncate">{service.label}</span>
+                </button>
+              );
+            })}
+          </div>
+          {node.stereotype && !serviceIconForStereotype(node.stereotype) ? (
+            <p className="mt-1 text-[10px] text-muted-foreground">
+              “{node.stereotype}” is a custom stereotype — pick a service above to give it an icon.
+            </p>
+          ) : null}
+        </div>
       </div>
+
+      <div className="flex items-center justify-between">
+        <SectionLabel>Description</SectionLabel>
+        <button
+          type="button"
+          onClick={() => void generateDescription()}
+          disabled={describing}
+          className="mb-1.5 flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/5 disabled:opacity-50"
+        >
+          {describing ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+          AI describe
+        </button>
+      </div>
+      <textarea
+        aria-label="Node description"
+        value={node.notes[0] ?? ""}
+        onChange={(e) => patch({ notes: [e.target.value] })}
+        placeholder="Describe this node's responsibility…"
+        rows={3}
+        className="h-auto w-full resize-y rounded-lg border border-line bg-white px-2 py-1.5 text-[12px] font-medium text-foreground outline-none transition-colors focus:border-primary/60"
+      />
+      {describeMode ? (
+        <p className="mt-1 text-[10.5px] text-muted-foreground">
+          {describeMode === "online" ? "Generated with GPT-4o / Claude" : "Offline mode — ArchVision's local extraction engine"}
+        </p>
+      ) : null}
 
       <SectionLabel>Style</SectionLabel>
       <div className="space-y-2">
@@ -250,7 +379,7 @@ function NodeEditor({ engine }: { engine: DiagramEngine }): React.ReactElement |
           />
           Interface
         </label>
-        <label className={cn("flex items-center gap-1.5 text-[11.5px] font-medium text-foreground", node.isAbstract && "text-amber-600")}>
+        <label className={cn("flex items-center gap-1.5 text-[11.5px] font-medium text-foreground", node.isAbstract && "text-teal-700")}>
           <input
             type="checkbox"
             checked={node.isAbstract}

@@ -20,7 +20,8 @@ const CATEGORY_LABEL: Record<EditorTemplate["category"], string> = {
   planning: "Planning",
 };
 
-const MY_TEMPLATES_KEY = "archvision:my-templates";
+/** Shared localStorage key — editor-shell writes saved templates here. */
+export const MY_TEMPLATES_KEY = "archvision:my-templates";
 
 interface MyTemplate {
   id: string;

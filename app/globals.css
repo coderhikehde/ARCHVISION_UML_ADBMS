@@ -9,11 +9,12 @@
   --line: #e2e8f0;
   --primary: #2563eb;
   --primary-deep: #1e3a8a;
-  --accent: #fbbf24;
-  --accent-soft: #fef3c7;
+  --accent: #14b8a6;
+  --accent-soft: #ccfbf1;
   --muted: #64748b;
   --success: #10b981;
   --error: #ef4444;
+  --warning: #d97706;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -153,7 +154,7 @@
   }
 
   .btn-accent {
-    @apply bg-accent text-[#78350F] shadow-[0_2px_8px_rgba(251,191,36,0.35)] hover:shadow-[0_6px_20px_rgba(251,191,36,0.45)] hover:-translate-y-[1.5px];
+    @apply bg-accent text-[#042F2E] shadow-[0_2px_8px_rgba(20,184,166,0.35)] hover:shadow-[0_6px_20px_rgba(20,184,166,0.45)] hover:-translate-y-[1.5px];
   }
 
   .btn-danger {
@@ -161,8 +162,17 @@
   }
 
   .input-base {
-    @apply w-full bg-white border border-line rounded-btn2 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-300 focus:border-primary focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)] outline-none;
+    @apply w-full bg-white border border-line rounded-btn2 px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground transition-all duration-300;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Shared focus ring — single source for form-control focus styling so it
+     can never drift out of sync with the palette again. */
+  .input-base:focus,
+  .focus-ring:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
   }
 
   .tag {
@@ -253,31 +263,7 @@
 }
 
 .orb-2 {
-  background: radial-gradient(circle at 70% 30%, rgba(251, 191, 36, 0.3), rgba(251, 191, 36, 0.06) 70%);
-  animation-delay: -4s;
-}
-
-.orb-3 {
-  background: radial-gradient(circle at 50% 50%, rgba(16, 185, 129, 0.22), rgba(16, 185, 129, 0.05) 70%);
-  animation-delay: -8s;
-}
-
-/* Animated orb background for hero */
-.orb {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
-  opacity: 0.55;
-  animation: floatOrbit 14s ease-in-out infinite;
-  pointer-events: none;
-}
-
-.orb-1 {
-  background: radial-gradient(circle at 30% 30%, rgba(37, 99, 235, 0.35), rgba(30, 58, 138, 0.12) 70%);
-}
-
-.orb-2 {
-  background: radial-gradient(circle at 70% 30%, rgba(251, 191, 36, 0.3), rgba(251, 191, 36, 0.06) 70%);
+  background: radial-gradient(circle at 70% 30%, rgba(20, 184, 166, 0.3), rgba(20, 184, 166, 0.06) 70%);
   animation-delay: -4s;
 }
 

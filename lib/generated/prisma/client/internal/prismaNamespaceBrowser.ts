@@ -54,13 +54,19 @@ export const ModelName = {
   Account: 'Account',
   Session: 'Session',
   User: 'User',
+  Organization: 'Organization',
+  WorkspaceMember: 'WorkspaceMember',
   Project: 'Project',
   Diagram: 'Diagram',
   PromptHistory: 'PromptHistory',
   ValidationReport: 'ValidationReport',
   Export: 'Export',
   DiagramVersion: 'DiagramVersion',
-  DiagramChangeLog: 'DiagramChangeLog'
+  DiagramChangeLog: 'DiagramChangeLog',
+  IdempotencyRecord: 'IdempotencyRecord',
+  AuditLog: 'AuditLog',
+  Comment: 'Comment',
+  Adr: 'Adr'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -118,6 +124,27 @@ export const UserScalarFieldEnum = {
 } as const
 
 export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const OrganizationScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type OrganizationScalarFieldEnum = (typeof OrganizationScalarFieldEnum)[keyof typeof OrganizationScalarFieldEnum]
+
+
+export const WorkspaceMemberScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  userId: 'userId',
+  role: 'role',
+  createdAt: 'createdAt'
+} as const
+
+export type WorkspaceMemberScalarFieldEnum = (typeof WorkspaceMemberScalarFieldEnum)[keyof typeof WorkspaceMemberScalarFieldEnum]
 
 
 export const ProjectScalarFieldEnum = {
@@ -212,6 +239,63 @@ export const DiagramChangeLogScalarFieldEnum = {
 } as const
 
 export type DiagramChangeLogScalarFieldEnum = (typeof DiagramChangeLogScalarFieldEnum)[keyof typeof DiagramChangeLogScalarFieldEnum]
+
+
+export const IdempotencyRecordScalarFieldEnum = {
+  id: 'id',
+  key: 'key',
+  userId: 'userId',
+  status: 'status',
+  body: 'body',
+  createdAt: 'createdAt'
+} as const
+
+export type IdempotencyRecordScalarFieldEnum = (typeof IdempotencyRecordScalarFieldEnum)[keyof typeof IdempotencyRecordScalarFieldEnum]
+
+
+export const AuditLogScalarFieldEnum = {
+  id: 'id',
+  organizationId: 'organizationId',
+  userId: 'userId',
+  action: 'action',
+  targetType: 'targetType',
+  targetId: 'targetId',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type AuditLogScalarFieldEnum = (typeof AuditLogScalarFieldEnum)[keyof typeof AuditLogScalarFieldEnum]
+
+
+export const CommentScalarFieldEnum = {
+  id: 'id',
+  diagramId: 'diagramId',
+  authorId: 'authorId',
+  text: 'text',
+  x: 'x',
+  y: 'y',
+  createdAt: 'createdAt'
+} as const
+
+export type CommentScalarFieldEnum = (typeof CommentScalarFieldEnum)[keyof typeof CommentScalarFieldEnum]
+
+
+export const AdrScalarFieldEnum = {
+  id: 'id',
+  diagramId: 'diagramId',
+  number: 'number',
+  title: 'title',
+  status: 'status',
+  context: 'context',
+  decision: 'decision',
+  consequences: 'consequences',
+  linkedNodes: 'linkedNodes',
+  authorId: 'authorId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type AdrScalarFieldEnum = (typeof AdrScalarFieldEnum)[keyof typeof AdrScalarFieldEnum]
 
 
 export const SortOrder = {

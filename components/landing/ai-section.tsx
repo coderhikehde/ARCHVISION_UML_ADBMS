@@ -50,7 +50,7 @@ export function AISection(): React.ReactElement {
                 (command) => (
                   <span
                     key={command}
-                    className="rounded-pill border border-amber-200 bg-accent-soft px-3.5 py-1.5 font-mono text-[12px] text-[#92400E]"
+                    className="rounded-pill border border-accent-200 bg-accent-soft px-3.5 py-1.5 font-mono text-[12px] text-teal-900"
                   >
                     “{command}”
                   </span>

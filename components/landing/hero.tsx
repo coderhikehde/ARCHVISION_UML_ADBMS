@@ -32,7 +32,7 @@ export function Hero({ authed = false }: { authed?: boolean }): React.ReactEleme
           <motion.div variants={fadeUp} custom={0} initial="hidden" animate="visible">
             <Badge variant="accent" className="mb-6 gap-2 px-4 py-1.5 text-[11px]">
               <Sparkles className="h-3 w-3" />
-              Backed by GPT-4o & Claude 3.5 architecture engines
+              From plain language to production-ready UML
             </Badge>
           </motion.div>
 
@@ -92,7 +92,7 @@ export function Hero({ authed = false }: { authed?: boolean }): React.ReactEleme
             className="mt-10 flex items-center justify-center gap-6 text-[13px] text-muted-foreground"
           >
             <span className="flex items-center gap-1.5">
-              <Zap className="h-3.5 w-3.5 text-accent" /> Blazing-fast streaming
+              <Zap className="h-3.5 w-3.5 text-teal-600" /> Blazing-fast streaming
             </span>
             <span className="hidden h-4 w-px bg-line sm:block" />
             <span className="flex items-center gap-1.5">

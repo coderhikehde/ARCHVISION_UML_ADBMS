@@ -33,6 +33,19 @@ export type Session = Prisma.SessionModel
  */
 export type User = Prisma.UserModel
 /**
+ * Model Organization
+ * Multi-tenant workspace (Epic 3). Projects stay user-owned for now;
+ * organizations gate collaboration and will own shared projects when the
+ * real-time layer lands.
+ */
+export type Organization = Prisma.OrganizationModel
+/**
+ * Model WorkspaceMember
+ * Role-based membership. (organizationId, userId) uniqueness makes joins
+ * race-safe; role changes are enforced at the service layer.
+ */
+export type WorkspaceMember = Prisma.WorkspaceMemberModel
+/**
  * Model Project
  * 
  */
@@ -67,3 +80,24 @@ export type DiagramVersion = Prisma.DiagramVersionModel
  * 
  */
 export type DiagramChangeLog = Prisma.DiagramChangeLogModel
+/**
+ * Model IdempotencyRecord
+ * 
+ */
+export type IdempotencyRecord = Prisma.IdempotencyRecordModel
+/**
+ * Model AuditLog
+ * Append-only audit trail for security compliance (Epic 6).
+ * Every membership mutation and future org-scoped action lands here.
+ */
+export type AuditLog = Prisma.AuditLogModel
+/**
+ * Model Comment
+ * Canvas comments pinned to diagrams (async collab — persisted per diagram).
+ */
+export type Comment = Prisma.CommentModel
+/**
+ * Model Adr
+ * Architecture Decision Records persisted per diagram (async collab).
+ */
+export type Adr = Prisma.AdrModel

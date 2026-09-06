@@ -282,6 +282,8 @@ export type DiagramWhereInput = {
   exports?: Prisma.ExportListRelationFilter
   versions?: Prisma.DiagramVersionListRelationFilter
   changeLog?: Prisma.DiagramChangeLogListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
+  adrs?: Prisma.AdrListRelationFilter
 }
 
 export type DiagramOrderByWithRelationInput = {
@@ -305,6 +307,8 @@ export type DiagramOrderByWithRelationInput = {
   exports?: Prisma.ExportOrderByRelationAggregateInput
   versions?: Prisma.DiagramVersionOrderByRelationAggregateInput
   changeLog?: Prisma.DiagramChangeLogOrderByRelationAggregateInput
+  comments?: Prisma.CommentOrderByRelationAggregateInput
+  adrs?: Prisma.AdrOrderByRelationAggregateInput
 }
 
 export type DiagramWhereUniqueInput = Prisma.AtLeast<{
@@ -331,6 +335,8 @@ export type DiagramWhereUniqueInput = Prisma.AtLeast<{
   exports?: Prisma.ExportListRelationFilter
   versions?: Prisma.DiagramVersionListRelationFilter
   changeLog?: Prisma.DiagramChangeLogListRelationFilter
+  comments?: Prisma.CommentListRelationFilter
+  adrs?: Prisma.AdrListRelationFilter
 }, "id">
 
 export type DiagramOrderByWithAggregationInput = {
@@ -395,6 +401,8 @@ export type DiagramCreateInput = {
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateInput = {
@@ -417,6 +425,8 @@ export type DiagramUncheckedCreateInput = {
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUpdateInput = {
@@ -439,6 +449,8 @@ export type DiagramUpdateInput = {
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateInput = {
@@ -461,6 +473,8 @@ export type DiagramUncheckedUpdateInput = {
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateManyInput = {
@@ -701,6 +715,34 @@ export type DiagramUpdateOneRequiredWithoutChangeLogNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.DiagramUpdateToOneWithWhereWithoutChangeLogInput, Prisma.DiagramUpdateWithoutChangeLogInput>, Prisma.DiagramUncheckedUpdateWithoutChangeLogInput>
 }
 
+export type DiagramCreateNestedOneWithoutCommentsInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutCommentsInput, Prisma.DiagramUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutCommentsInput
+  connect?: Prisma.DiagramWhereUniqueInput
+}
+
+export type DiagramUpdateOneRequiredWithoutCommentsNestedInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutCommentsInput, Prisma.DiagramUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutCommentsInput
+  upsert?: Prisma.DiagramUpsertWithoutCommentsInput
+  connect?: Prisma.DiagramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DiagramUpdateToOneWithWhereWithoutCommentsInput, Prisma.DiagramUpdateWithoutCommentsInput>, Prisma.DiagramUncheckedUpdateWithoutCommentsInput>
+}
+
+export type DiagramCreateNestedOneWithoutAdrsInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutAdrsInput, Prisma.DiagramUncheckedCreateWithoutAdrsInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutAdrsInput
+  connect?: Prisma.DiagramWhereUniqueInput
+}
+
+export type DiagramUpdateOneRequiredWithoutAdrsNestedInput = {
+  create?: Prisma.XOR<Prisma.DiagramCreateWithoutAdrsInput, Prisma.DiagramUncheckedCreateWithoutAdrsInput>
+  connectOrCreate?: Prisma.DiagramCreateOrConnectWithoutAdrsInput
+  upsert?: Prisma.DiagramUpsertWithoutAdrsInput
+  connect?: Prisma.DiagramWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.DiagramUpdateToOneWithWhereWithoutAdrsInput, Prisma.DiagramUpdateWithoutAdrsInput>, Prisma.DiagramUncheckedUpdateWithoutAdrsInput>
+}
+
 export type DiagramCreateWithoutProjectInput = {
   id?: string
   name: string
@@ -720,6 +762,8 @@ export type DiagramCreateWithoutProjectInput = {
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutProjectInput = {
@@ -741,6 +785,8 @@ export type DiagramUncheckedCreateWithoutProjectInput = {
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutProjectInput = {
@@ -808,6 +854,8 @@ export type DiagramCreateWithoutPromptHistoryInput = {
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutPromptHistoryInput = {
@@ -829,6 +877,8 @@ export type DiagramUncheckedCreateWithoutPromptHistoryInput = {
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutPromptHistoryInput = {
@@ -866,6 +916,8 @@ export type DiagramUpdateWithoutPromptHistoryInput = {
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutPromptHistoryInput = {
@@ -887,6 +939,8 @@ export type DiagramUncheckedUpdateWithoutPromptHistoryInput = {
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateWithoutValidationReportsInput = {
@@ -908,6 +962,8 @@ export type DiagramCreateWithoutValidationReportsInput = {
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutValidationReportsInput = {
@@ -929,6 +985,8 @@ export type DiagramUncheckedCreateWithoutValidationReportsInput = {
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutValidationReportsInput = {
@@ -966,6 +1024,8 @@ export type DiagramUpdateWithoutValidationReportsInput = {
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutValidationReportsInput = {
@@ -987,6 +1047,8 @@ export type DiagramUncheckedUpdateWithoutValidationReportsInput = {
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateWithoutExportsInput = {
@@ -1008,6 +1070,8 @@ export type DiagramCreateWithoutExportsInput = {
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutExportsInput = {
@@ -1029,6 +1093,8 @@ export type DiagramUncheckedCreateWithoutExportsInput = {
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutExportsInput = {
@@ -1066,6 +1132,8 @@ export type DiagramUpdateWithoutExportsInput = {
   validationReports?: Prisma.ValidationReportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutExportsInput = {
@@ -1087,6 +1155,8 @@ export type DiagramUncheckedUpdateWithoutExportsInput = {
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateWithoutVersionsInput = {
@@ -1108,6 +1178,8 @@ export type DiagramCreateWithoutVersionsInput = {
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutDiagramInput
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutVersionsInput = {
@@ -1129,6 +1201,8 @@ export type DiagramUncheckedCreateWithoutVersionsInput = {
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutDiagramInput
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutVersionsInput = {
@@ -1166,6 +1240,8 @@ export type DiagramUpdateWithoutVersionsInput = {
   validationReports?: Prisma.ValidationReportUpdateManyWithoutDiagramNestedInput
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutVersionsInput = {
@@ -1187,6 +1263,8 @@ export type DiagramUncheckedUpdateWithoutVersionsInput = {
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutDiagramNestedInput
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateWithoutChangeLogInput = {
@@ -1208,6 +1286,8 @@ export type DiagramCreateWithoutChangeLogInput = {
   validationReports?: Prisma.ValidationReportCreateNestedManyWithoutDiagramInput
   exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramUncheckedCreateWithoutChangeLogInput = {
@@ -1229,6 +1309,8 @@ export type DiagramUncheckedCreateWithoutChangeLogInput = {
   validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutDiagramInput
   exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
   versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
 }
 
 export type DiagramCreateOrConnectWithoutChangeLogInput = {
@@ -1266,6 +1348,8 @@ export type DiagramUpdateWithoutChangeLogInput = {
   validationReports?: Prisma.ValidationReportUpdateManyWithoutDiagramNestedInput
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutChangeLogInput = {
@@ -1287,6 +1371,224 @@ export type DiagramUncheckedUpdateWithoutChangeLogInput = {
   validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutDiagramNestedInput
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
+}
+
+export type DiagramCreateWithoutCommentsInput = {
+  id?: string
+  name: string
+  type: $Enums.DiagramType
+  mermaidCode: string
+  plantUmlCode?: string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: $Enums.ViewMode
+  isValid?: boolean
+  validationScore?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  project: Prisma.ProjectCreateNestedOneWithoutDiagramsInput
+  promptHistory?: Prisma.PromptHistoryCreateNestedManyWithoutDiagramInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutDiagramInput
+  exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
+  versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
+  changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrCreateNestedManyWithoutDiagramInput
+}
+
+export type DiagramUncheckedCreateWithoutCommentsInput = {
+  id?: string
+  name: string
+  type: $Enums.DiagramType
+  projectId: string
+  mermaidCode: string
+  plantUmlCode?: string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: $Enums.ViewMode
+  isValid?: boolean
+  validationScore?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  promptHistory?: Prisma.PromptHistoryUncheckedCreateNestedManyWithoutDiagramInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutDiagramInput
+  exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
+  versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
+  changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  adrs?: Prisma.AdrUncheckedCreateNestedManyWithoutDiagramInput
+}
+
+export type DiagramCreateOrConnectWithoutCommentsInput = {
+  where: Prisma.DiagramWhereUniqueInput
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutCommentsInput, Prisma.DiagramUncheckedCreateWithoutCommentsInput>
+}
+
+export type DiagramUpsertWithoutCommentsInput = {
+  update: Prisma.XOR<Prisma.DiagramUpdateWithoutCommentsInput, Prisma.DiagramUncheckedUpdateWithoutCommentsInput>
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutCommentsInput, Prisma.DiagramUncheckedCreateWithoutCommentsInput>
+  where?: Prisma.DiagramWhereInput
+}
+
+export type DiagramUpdateToOneWithWhereWithoutCommentsInput = {
+  where?: Prisma.DiagramWhereInput
+  data: Prisma.XOR<Prisma.DiagramUpdateWithoutCommentsInput, Prisma.DiagramUncheckedUpdateWithoutCommentsInput>
+}
+
+export type DiagramUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumDiagramTypeFieldUpdateOperationsInput | $Enums.DiagramType
+  mermaidCode?: Prisma.StringFieldUpdateOperationsInput | string
+  plantUmlCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: Prisma.EnumViewModeFieldUpdateOperationsInput | $Enums.ViewMode
+  isValid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validationScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneRequiredWithoutDiagramsNestedInput
+  promptHistory?: Prisma.PromptHistoryUpdateManyWithoutDiagramNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutDiagramNestedInput
+  exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
+  versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
+  changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
+}
+
+export type DiagramUncheckedUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumDiagramTypeFieldUpdateOperationsInput | $Enums.DiagramType
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  mermaidCode?: Prisma.StringFieldUpdateOperationsInput | string
+  plantUmlCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: Prisma.EnumViewModeFieldUpdateOperationsInput | $Enums.ViewMode
+  isValid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validationScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  promptHistory?: Prisma.PromptHistoryUncheckedUpdateManyWithoutDiagramNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutDiagramNestedInput
+  exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
+  versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
+  changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
+}
+
+export type DiagramCreateWithoutAdrsInput = {
+  id?: string
+  name: string
+  type: $Enums.DiagramType
+  mermaidCode: string
+  plantUmlCode?: string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: $Enums.ViewMode
+  isValid?: boolean
+  validationScore?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  project: Prisma.ProjectCreateNestedOneWithoutDiagramsInput
+  promptHistory?: Prisma.PromptHistoryCreateNestedManyWithoutDiagramInput
+  validationReports?: Prisma.ValidationReportCreateNestedManyWithoutDiagramInput
+  exports?: Prisma.ExportCreateNestedManyWithoutDiagramInput
+  versions?: Prisma.DiagramVersionCreateNestedManyWithoutDiagramInput
+  changeLog?: Prisma.DiagramChangeLogCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentCreateNestedManyWithoutDiagramInput
+}
+
+export type DiagramUncheckedCreateWithoutAdrsInput = {
+  id?: string
+  name: string
+  type: $Enums.DiagramType
+  projectId: string
+  mermaidCode: string
+  plantUmlCode?: string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: $Enums.ViewMode
+  isValid?: boolean
+  validationScore?: number | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  promptHistory?: Prisma.PromptHistoryUncheckedCreateNestedManyWithoutDiagramInput
+  validationReports?: Prisma.ValidationReportUncheckedCreateNestedManyWithoutDiagramInput
+  exports?: Prisma.ExportUncheckedCreateNestedManyWithoutDiagramInput
+  versions?: Prisma.DiagramVersionUncheckedCreateNestedManyWithoutDiagramInput
+  changeLog?: Prisma.DiagramChangeLogUncheckedCreateNestedManyWithoutDiagramInput
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutDiagramInput
+}
+
+export type DiagramCreateOrConnectWithoutAdrsInput = {
+  where: Prisma.DiagramWhereUniqueInput
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutAdrsInput, Prisma.DiagramUncheckedCreateWithoutAdrsInput>
+}
+
+export type DiagramUpsertWithoutAdrsInput = {
+  update: Prisma.XOR<Prisma.DiagramUpdateWithoutAdrsInput, Prisma.DiagramUncheckedUpdateWithoutAdrsInput>
+  create: Prisma.XOR<Prisma.DiagramCreateWithoutAdrsInput, Prisma.DiagramUncheckedCreateWithoutAdrsInput>
+  where?: Prisma.DiagramWhereInput
+}
+
+export type DiagramUpdateToOneWithWhereWithoutAdrsInput = {
+  where?: Prisma.DiagramWhereInput
+  data: Prisma.XOR<Prisma.DiagramUpdateWithoutAdrsInput, Prisma.DiagramUncheckedUpdateWithoutAdrsInput>
+}
+
+export type DiagramUpdateWithoutAdrsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumDiagramTypeFieldUpdateOperationsInput | $Enums.DiagramType
+  mermaidCode?: Prisma.StringFieldUpdateOperationsInput | string
+  plantUmlCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: Prisma.EnumViewModeFieldUpdateOperationsInput | $Enums.ViewMode
+  isValid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validationScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  project?: Prisma.ProjectUpdateOneRequiredWithoutDiagramsNestedInput
+  promptHistory?: Prisma.PromptHistoryUpdateManyWithoutDiagramNestedInput
+  validationReports?: Prisma.ValidationReportUpdateManyWithoutDiagramNestedInput
+  exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
+  versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
+  changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+}
+
+export type DiagramUncheckedUpdateWithoutAdrsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.EnumDiagramTypeFieldUpdateOperationsInput | $Enums.DiagramType
+  projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  mermaidCode?: Prisma.StringFieldUpdateOperationsInput | string
+  plantUmlCode?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  reactFlowNodes?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  reactFlowEdges?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  viewMode?: Prisma.EnumViewModeFieldUpdateOperationsInput | $Enums.ViewMode
+  isValid?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  validationScore?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  promptHistory?: Prisma.PromptHistoryUncheckedUpdateManyWithoutDiagramNestedInput
+  validationReports?: Prisma.ValidationReportUncheckedUpdateManyWithoutDiagramNestedInput
+  exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
+  versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
+  changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramCreateManyProjectInput = {
@@ -1324,6 +1626,8 @@ export type DiagramUpdateWithoutProjectInput = {
   exports?: Prisma.ExportUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateWithoutProjectInput = {
@@ -1345,6 +1649,8 @@ export type DiagramUncheckedUpdateWithoutProjectInput = {
   exports?: Prisma.ExportUncheckedUpdateManyWithoutDiagramNestedInput
   versions?: Prisma.DiagramVersionUncheckedUpdateManyWithoutDiagramNestedInput
   changeLog?: Prisma.DiagramChangeLogUncheckedUpdateManyWithoutDiagramNestedInput
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutDiagramNestedInput
+  adrs?: Prisma.AdrUncheckedUpdateManyWithoutDiagramNestedInput
 }
 
 export type DiagramUncheckedUpdateManyWithoutProjectInput = {
@@ -1374,6 +1680,8 @@ export type DiagramCountOutputType = {
   exports: number
   versions: number
   changeLog: number
+  comments: number
+  adrs: number
 }
 
 export type DiagramCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1382,6 +1690,8 @@ export type DiagramCountOutputTypeSelect<ExtArgs extends runtime.Types.Extension
   exports?: boolean | DiagramCountOutputTypeCountExportsArgs
   versions?: boolean | DiagramCountOutputTypeCountVersionsArgs
   changeLog?: boolean | DiagramCountOutputTypeCountChangeLogArgs
+  comments?: boolean | DiagramCountOutputTypeCountCommentsArgs
+  adrs?: boolean | DiagramCountOutputTypeCountAdrsArgs
 }
 
 /**
@@ -1429,6 +1739,20 @@ export type DiagramCountOutputTypeCountChangeLogArgs<ExtArgs extends runtime.Typ
   where?: Prisma.DiagramChangeLogWhereInput
 }
 
+/**
+ * DiagramCountOutputType without action
+ */
+export type DiagramCountOutputTypeCountCommentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommentWhereInput
+}
+
+/**
+ * DiagramCountOutputType without action
+ */
+export type DiagramCountOutputTypeCountAdrsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.AdrWhereInput
+}
+
 
 export type DiagramSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1451,6 +1775,8 @@ export type DiagramSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   exports?: boolean | Prisma.Diagram$exportsArgs<ExtArgs>
   versions?: boolean | Prisma.Diagram$versionsArgs<ExtArgs>
   changeLog?: boolean | Prisma.Diagram$changeLogArgs<ExtArgs>
+  comments?: boolean | Prisma.Diagram$commentsArgs<ExtArgs>
+  adrs?: boolean | Prisma.Diagram$adrsArgs<ExtArgs>
   _count?: boolean | Prisma.DiagramCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["diagram"]>
 
@@ -1515,6 +1841,8 @@ export type DiagramInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs
   exports?: boolean | Prisma.Diagram$exportsArgs<ExtArgs>
   versions?: boolean | Prisma.Diagram$versionsArgs<ExtArgs>
   changeLog?: boolean | Prisma.Diagram$changeLogArgs<ExtArgs>
+  comments?: boolean | Prisma.Diagram$commentsArgs<ExtArgs>
+  adrs?: boolean | Prisma.Diagram$adrsArgs<ExtArgs>
   _count?: boolean | Prisma.DiagramCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type DiagramIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1533,6 +1861,8 @@ export type $DiagramPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     exports: Prisma.$ExportPayload<ExtArgs>[]
     versions: Prisma.$DiagramVersionPayload<ExtArgs>[]
     changeLog: Prisma.$DiagramChangeLogPayload<ExtArgs>[]
+    comments: Prisma.$CommentPayload<ExtArgs>[]
+    adrs: Prisma.$AdrPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1949,6 +2279,8 @@ export interface Prisma__DiagramClient<T, Null = never, ExtArgs extends runtime.
   exports<T extends Prisma.Diagram$exportsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$exportsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   versions<T extends Prisma.Diagram$versionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$versionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DiagramVersionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   changeLog<T extends Prisma.Diagram$changeLogArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$changeLogArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DiagramChangeLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  comments<T extends Prisma.Diagram$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  adrs<T extends Prisma.Diagram$adrsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Diagram$adrsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AdrPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2510,6 +2842,54 @@ export type Diagram$changeLogArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.DiagramChangeLogScalarFieldEnum | Prisma.DiagramChangeLogScalarFieldEnum[]
+}
+
+/**
+ * Diagram.comments
+ */
+export type Diagram$commentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Comment
+   */
+  select?: Prisma.CommentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Comment
+   */
+  omit?: Prisma.CommentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommentInclude<ExtArgs> | null
+  where?: Prisma.CommentWhereInput
+  orderBy?: Prisma.CommentOrderByWithRelationInput | Prisma.CommentOrderByWithRelationInput[]
+  cursor?: Prisma.CommentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CommentScalarFieldEnum | Prisma.CommentScalarFieldEnum[]
+}
+
+/**
+ * Diagram.adrs
+ */
+export type Diagram$adrsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Adr
+   */
+  select?: Prisma.AdrSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Adr
+   */
+  omit?: Prisma.AdrOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.AdrInclude<ExtArgs> | null
+  where?: Prisma.AdrWhereInput
+  orderBy?: Prisma.AdrOrderByWithRelationInput | Prisma.AdrOrderByWithRelationInput[]
+  cursor?: Prisma.AdrWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.AdrScalarFieldEnum | Prisma.AdrScalarFieldEnum[]
 }
 
 /**

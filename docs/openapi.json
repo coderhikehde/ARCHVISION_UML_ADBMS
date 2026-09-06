@@ -1,0 +1,477 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ArchVision AI API",
+    "version": "1.0.0",
+    "description": "REST API for the ArchVision AI diagramming workspace. All responses use the envelope `{ ok: true, data }` for success and `{ ok: false, error: { code, message, requestId, details? } }` for failure. Create endpoints accept an optional `Idempotency-Key` header (1-128 chars): a replayed key returns the stored original response without re-executing. The client facade (`lib/data/storage.ts`) treats this API as optional — any failure falls back to localStorage."
+  },
+  "servers": [{ "url": "/" }],
+  "security": [{ "cookieSession": [] }],
+  "components": {
+    "securitySchemes": {
+      "cookieSession": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "next-auth.session-token"
+      }
+    },
+    "headers": {
+      "X-RequestId": { "schema": { "type": "string", "format": "uuid" }, "description": "Correlation id echoed from the request or minted by the server." },
+      "Retry-After": { "schema": { "type": "integer" }, "description": "Seconds to wait before retrying (429 only)." }
+    },
+    "parameters": {
+      "Limit": { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 200 }, "description": "Max rows per page." },
+      "Offset": { "name": "offset", "in": "query", "schema": { "type": "integer", "minimum": 0 }, "description": "Rows to skip." }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": ["ok", "error"],
+        "properties": {
+          "ok": { "const": false },
+          "error": {
+            "type": "object",
+            "required": ["code", "message", "requestId"],
+            "properties": {
+              "code": { "type": "string", "enum": ["bad_request", "unauthorized", "forbidden", "not_found", "conflict", "rate_limited", "unprocessable_entity", "service_unavailable", "ai_unavailable", "internal"] },
+              "message": { "type": "string" },
+              "requestId": { "type": "string" },
+              "details": {}
+            }
+          }
+        }
+      },
+      "Project": {
+        "type": "object",
+        "required": ["id", "name", "description", "githubRepo", "githubBranch", "lastSyncedAt", "syncing", "diagramCount", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "maxLength": 120 },
+          "description": { "type": ["string", "null"], "maxLength": 500 },
+          "githubRepo": { "type": ["string", "null"] },
+          "githubBranch": { "type": "string" },
+          "lastSyncedAt": { "type": ["string", "null"], "format": "date-time" },
+          "syncing": { "type": "boolean" },
+          "diagramCount": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "ProjectCreate": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "description": { "type": "string", "maxLength": 500 }
+        }
+      },
+      "Diagram": {
+        "type": "object",
+        "required": ["id", "name", "type", "projectId", "mermaidCode", "viewMode", "isValid", "validationScore", "createdAt", "updatedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string", "maxLength": 120 },
+          "type": { "type": "string", "enum": ["CLASS", "SEQUENCE", "USE_CASE", "STATE", "ACTIVITY", "COMPONENT", "DEPLOYMENT", "ER", "PACKAGE"] },
+          "projectId": { "type": "string" },
+          "mermaidCode": { "type": "string", "maxLength": 100000 },
+          "viewMode": { "type": "string", "enum": ["EXECUTIVE", "ENGINEERING"] },
+          "isValid": { "type": "boolean" },
+          "validationScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DiagramCreate": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "type": { "type": "string", "enum": ["CLASS", "SEQUENCE", "USE_CASE", "STATE", "ACTIVITY", "COMPONENT", "DEPLOYMENT", "ER", "PACKAGE"] },
+          "description": { "type": "string", "maxLength": 500 },
+          "mermaidCode": { "type": "string", "maxLength": 100000 }
+        }
+      },
+      "DiagramPatch": {
+        "type": "object",
+        "minProperties": 1,
+        "properties": {
+          "name": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "mermaidCode": { "type": "string", "maxLength": 100000 },
+          "viewMode": { "type": "string", "enum": ["EXECUTIVE", "ENGINEERING"] },
+          "isValid": { "type": "boolean" },
+          "validationScore": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+          "expectedUpdatedAt": { "type": "string", "format": "date-time", "description": "Optimistic concurrency: a mismatch yields 409 conflict." }
+        }
+      },
+      "Prompt": {
+        "type": "object",
+        "required": ["id", "diagramId", "prompt", "response", "actionType", "createdAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "diagramId": { "type": "string" },
+          "prompt": { "type": "string", "maxLength": 8000 },
+          "response": { "type": "string", "maxLength": 200000 },
+          "actionType": { "type": "string", "enum": ["generate", "transform", "analyze", "explain"] },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "PromptRecord": {
+        "type": "object",
+        "required": ["prompt", "response", "actionType"],
+        "properties": {
+          "prompt": { "type": "string", "minLength": 1, "maxLength": 8000 },
+          "response": { "type": "string", "maxLength": 200000 },
+          "actionType": { "type": "string", "enum": ["generate", "transform", "analyze", "explain"] }
+        }
+      },
+      "ValidationIssue": {
+        "type": "object",
+        "required": ["severity", "message", "rule"],
+        "properties": {
+          "severity": { "type": "string", "enum": ["critical", "warning", "info"] },
+          "message": { "type": "string" },
+          "rule": { "type": "string" },
+          "target": { "type": ["string", "null"] }
+        }
+      },
+      "ValidationResult": {
+        "type": "object",
+        "required": ["issues", "score"],
+        "properties": {
+          "issues": { "type": "array", "maxItems": 500, "items": { "$ref": "#/components/schemas/ValidationIssue" } },
+          "score": { "type": "integer", "minimum": 0, "maximum": 100 }
+        }
+      },
+      "ValidationReport": {
+        "type": "object",
+        "required": ["issues", "score", "createdAt"],
+        "properties": {
+          "issues": { "type": "array", "items": { "$ref": "#/components/schemas/ValidationIssue" } },
+          "score": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "DiagramVersion": {
+        "type": "object",
+        "required": ["version", "label", "mermaidCode", "summary", "changes", "createdAt"],
+        "properties": {
+          "version": { "type": "integer", "minimum": 1, "description": "Server-assigned, monotonic per diagram." },
+          "label": { "type": "string", "maxLength": 200 },
+          "mermaidCode": { "type": "string", "maxLength": 100000 },
+          "summary": { "type": "string", "maxLength": 2000 },
+          "changes": { "type": "array", "maxItems": 200, "items": { "type": "string", "maxLength": 500 } },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VersionCreate": {
+        "type": "object",
+        "required": ["label", "mermaidCode", "summary", "changes"],
+        "properties": {
+          "label": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "mermaidCode": { "type": "string", "minLength": 1, "maxLength": 100000 },
+          "summary": { "type": "string", "minLength": 1, "maxLength": 2000 },
+          "changes": { "type": "array", "maxItems": 200, "items": { "type": "string", "maxLength": 500 } }
+        }
+      },
+      "Change": {
+        "type": "object",
+        "required": ["at", "summary"],
+        "properties": {
+          "at": { "type": "string", "format": "date-time" },
+          "summary": { "type": "string", "maxLength": 2000 }
+        }
+      },
+      "ChangeRecord": {
+        "type": "object",
+        "required": ["summary"],
+        "properties": {
+          "summary": { "type": "string", "minLength": 1, "maxLength": 2000 }
+        }
+      },
+      "AiDescribeRequest": {
+        "type": "object",
+        "required": ["nodes", "relationships"],
+        "properties": {
+          "nodes": { "type": "array", "maxItems": 300, "items": { "type": "object" } },
+          "relationships": { "type": "array", "maxItems": 600, "items": { "type": "object" } },
+          "issues": { "type": "array", "maxItems": 200, "items": { "type": "object" } }
+        }
+      },
+      "AiDescribeResponse": {
+        "type": "object",
+        "required": ["text"],
+        "properties": { "text": { "type": "string" } }
+      },
+      "AiChatRequest": {
+        "type": "object",
+        "required": ["message", "action"],
+        "properties": {
+          "message": { "type": "string", "minLength": 1, "maxLength": 8000 },
+          "action": { "type": "string", "enum": ["generate", "transform", "analyze", "explain", "chat"] },
+          "context": { "type": "object" },
+          "history": { "type": "array", "maxItems": 20, "items": { "type": "object" } }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "required": ["status", "service", "db", "aiProvider", "dataMode", "uptimeSec", "timestamp"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok", "degraded"] },
+          "service": { "type": "string" },
+          "db": { "type": "string", "enum": ["up", "down"] },
+          "dbDetail": { "type": ["string", "null"] },
+          "aiProvider": { "type": "string", "enum": ["openai", "anthropic", "none"] },
+          "dataMode": { "type": "string" },
+          "uptimeSec": { "type": "integer" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "responses": {
+      "ErrorResponse": {
+        "description": "Error envelope.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": ["ops"],
+        "security": [],
+        "summary": "Uptime probe",
+        "description": "Reports DB reachability (bounded 3s query) and AI provider presence. 200 when the DB responds, 503 when degraded.",
+        "responses": {
+          "200": { "description": "Healthy", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/Health" } } } } } },
+          "503": { "description": "Degraded", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/Health" } } } } } }
+        }
+      }
+    },
+    "/api/projects": {
+      "get": {
+        "tags": ["projects"],
+        "summary": "List the caller's projects",
+        "parameters": [{ "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Projects (X-Total-Count carries the caller's total)", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Project" } } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      },
+      "post": {
+        "tags": ["projects"],
+        "summary": "Create a project",
+        "description": "Per-user quota (default 50). Fails with 403 when the quota is exhausted.",
+        "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string", "minLength": 1, "maxLength": 128 } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProjectCreate" } } } },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/Project" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "403": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/projects/{projectId}": {
+      "parameters": [{ "name": "projectId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "delete": {
+        "tags": ["projects"],
+        "summary": "Delete a project and all of its diagrams",
+        "description": "Diagram rows and their child resources (prompts, reports, versions, change log, exports) cascade in one transaction. 200 with data:false when the project is missing or not owned — existence is never leaked.",
+        "responses": {
+          "200": { "description": "Deleted flag", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "boolean" } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/projects/{projectId}/diagrams": {
+      "parameters": [{ "name": "projectId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["diagrams"],
+        "summary": "List diagrams in a project",
+        "parameters": [{ "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Diagrams", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Diagram" } } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      },
+      "post": {
+        "tags": ["diagrams"],
+        "summary": "Create a diagram",
+        "description": "Atomic: diagram row + first version snapshot + project touch in one transaction. Idempotency-Key replays the original 201.",
+        "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string", "minLength": 1, "maxLength": 128 } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DiagramCreate" } } } },
+        "responses": {
+          "201": { "description": "Created", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/Diagram" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "404": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/diagrams": {
+      "get": {
+        "tags": ["diagrams"],
+        "summary": "List the caller's diagrams across projects",
+        "parameters": [{ "name": "projectId", "in": "query", "schema": { "type": "string" }, "description": "Narrow to one project." }, { "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Diagrams", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Diagram" } } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/diagrams/{diagramId}": {
+      "parameters": [{ "name": "diagramId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["diagrams"],
+        "summary": "Fetch one diagram",
+        "description": "200 with data:null for both missing rows and rows owned by someone else — existence is never leaked.",
+        "responses": {
+          "200": { "description": "Diagram or null", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "anyOf": [{ "$ref": "#/components/schemas/Diagram" }, { "type": "null" }] } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      },
+      "patch": {
+        "tags": ["diagrams"],
+        "summary": "Partial update",
+        "description": "Optimistic concurrency via expectedUpdatedAt: stale writes get 409.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DiagramPatch" } } } },
+        "responses": {
+          "200": { "description": "Updated diagram", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/Diagram" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "409": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      },
+      "delete": {
+        "tags": ["diagrams"],
+        "summary": "Delete a diagram",
+        "description": "Cascades child rows (prompts, reports, versions, change log, exports) explicitly in one transaction. 200 with data:false when the diagram is missing or not owned.",
+        "responses": {
+          "200": { "description": "Deleted flag", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "boolean" } } } } } },
+          "401": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/diagrams/{diagramId}/prompts": {
+      "parameters": [{ "name": "diagramId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["prompts"],
+        "summary": "Prompt history (newest first)",
+        "parameters": [{ "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Prompts", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Prompt" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["prompts"],
+        "summary": "Record an AI prompt + response",
+        "responses": {
+          "200": { "description": "Recorded", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "null" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "404": { "$ref": "#/components/responses/ErrorResponse" }
+        },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PromptRecord" } } } }
+      }
+    },
+    "/api/diagrams/{diagramId}/validation": {
+      "parameters": [{ "name": "diagramId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["validation"],
+        "summary": "Latest validation report (200 with data:null when none exists)",
+        "responses": {
+          "200": { "description": "Report or null", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "anyOf": [{ "$ref": "#/components/schemas/ValidationReport" }, { "type": "null" }] } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["validation"],
+        "summary": "Save a report and update diagram flags atomically",
+        "responses": {
+          "200": { "description": "Saved", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "null" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "404": { "$ref": "#/components/responses/ErrorResponse" }
+        },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ValidationResult" } } } }
+      }
+    },
+    "/api/diagrams/{diagramId}/versions": {
+      "parameters": [{ "name": "diagramId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["versions"],
+        "summary": "Version history (newest first)",
+        "parameters": [{ "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Versions", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/DiagramVersion" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["versions"],
+        "summary": "Snapshot the diagram as the next version",
+        "description": "The server assigns the next monotonic number (max + 1) inside a transaction; the (diagramId, version) unique constraint plus a retry loop makes racing saves safe. Responds `{ data: { version: n } }`. Idempotency-Key replays the assigned number.",
+        "parameters": [{ "name": "Idempotency-Key", "in": "header", "schema": { "type": "string", "minLength": 1, "maxLength": 128 } }],
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VersionCreate" } } } },
+        "responses": {
+          "201": { "description": "Snapshot created", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "object", "required": ["version"], "properties": { "version": { "type": "integer" } } } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "404": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/diagrams/{diagramId}/changes": {
+      "parameters": [{ "name": "diagramId", "in": "path", "required": true, "schema": { "type": "string" } }],
+      "get": {
+        "tags": ["changes"],
+        "summary": "Change log (newest first)",
+        "parameters": [{ "$ref": "#/components/parameters/Limit" }, { "$ref": "#/components/parameters/Offset" }],
+        "responses": {
+          "200": { "description": "Changes", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "array", "items": { "$ref": "#/components/schemas/Change" } } } } } } }
+        }
+      },
+      "post": {
+        "tags": ["changes"],
+        "summary": "Append a change-log entry",
+        "responses": {
+          "200": { "description": "Recorded", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "type": "null" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "404": { "$ref": "#/components/responses/ErrorResponse" }
+        },
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ChangeRecord" } } } }
+      }
+    },
+    "/api/ai/describe": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "AI diagram description (non-streaming)",
+        "description": "502 ai_unavailable when no provider key is configured — the client then uses its deterministic local engine.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AiDescribeRequest" } } } },
+        "responses": {
+          "200": { "description": "Description", "content": { "application/json": { "schema": { "type": "object", "properties": { "ok": { "const": true }, "data": { "$ref": "#/components/schemas/AiDescribeResponse" } } } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" },
+          "502": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    },
+    "/api/ai/chat": {
+      "post": {
+        "tags": ["ai"],
+        "summary": "AI assistant (SSE stream)",
+        "description": "Streams `meta`, `delta`, `error` and `done` events. Pre-stream failures (auth/rate limit/schema) return the JSON error envelope; stream-time failures emit an SSE `error` event.",
+        "requestBody": { "required": true, "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AiChatRequest" } } } },
+        "responses": {
+          "200": { "description": "SSE stream", "content": { "text/event-stream": { "schema": { "type": "string" } } } },
+          "400": { "$ref": "#/components/responses/ErrorResponse" },
+          "401": { "$ref": "#/components/responses/ErrorResponse" },
+          "429": { "$ref": "#/components/responses/ErrorResponse" }
+        }
+      }
+    }
+  }
+}

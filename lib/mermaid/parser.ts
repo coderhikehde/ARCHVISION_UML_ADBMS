@@ -34,27 +34,53 @@ function stripComment(line: string): string {
   return idx >= 0 ? line.slice(0, idx) : line;
 }
 
+interface ParsedBlock {
+  className: string;
+  body: string[];
+  /** Namespace path (outermost first) the class was declared inside. */
+  namespacePath: string[];
+}
+
 function extractBlock(lines: string[]): ParsedBlock[] {
   const blocks: ParsedBlock[] = [];
-  let current: ParsedBlock | null = null;
+  // Frame stack distinguishes class-block closes from namespace closes:
+  // both are bare "}" lines, so content alone is ambiguous.
+  type Frame = { kind: "class"; block: ParsedBlock } | { kind: "namespace"; name: string };
+  const stack: Frame[] = [];
+  const namespacePath = (): string[] =>
+    stack.filter((f): f is Extract<Frame, { kind: "namespace" }> => f.kind === "namespace").map((f) => f.name);
+
   for (const raw of lines) {
     const line = stripComment(raw).trim();
     if (!line) continue;
-    if (current) {
-      if (line === "}") {
-        blocks.push(current);
-        current = null;
-      } else {
-        current.body.push(line);
-      }
+    if (line === "}") {
+      const frame = stack.pop();
+      if (frame?.kind === "class") blocks.push(frame.block);
+      continue;
+    }
+    const top = stack[stack.length - 1];
+    if (top?.kind === "class") {
+      // Member lines belong to the enclosing class even if they contain braces.
+      top.block.body.push(line);
+      continue;
+    }
+    const nsMatch = /^namespace\s+(.+?)\s*\{$/.exec(line);
+    if (nsMatch) {
+      stack.push({ kind: "namespace", name: nsMatch[1].trim() });
       continue;
     }
     const open = line.indexOf("{");
     if (open > 0 && line.endsWith("}")) {
-      const className = stripClassKeyword(line.slice(0, open).trim());
-      blocks.push({ className, body: [] });
+      blocks.push({
+        className: stripClassKeyword(line.slice(0, open).trim()),
+        body: [],
+        namespacePath: namespacePath(),
+      });
     } else if (open > 0) {
-      current = { className: stripClassKeyword(line.slice(0, open).trim()), body: [] };
+      stack.push({
+        kind: "class",
+        block: { className: stripClassKeyword(line.slice(0, open).trim()), body: [], namespacePath: namespacePath() },
+      });
     }
   }
   return blocks;
@@ -195,13 +221,14 @@ export function parseMermaidClassDiagram(code: string): UMLModel {
   const classes = new Map<string, UMLClass>();
   const links: UMLLink[] = [];
 
-  const ensureClass = (rawName: string): UMLClass => {
+  const ensureClass = (rawName: string, parentId: string | null = null): UMLClass => {
     const { name, stereotype } = extractStereotype(rawName);
     if (!classes.has(name)) {
       classes.set(name, {
         id: name,
         name,
         stereotype,
+        parentId,
         attributes: [],
         methods: [],
         isAbstract: false,
@@ -211,9 +238,22 @@ export function parseMermaidClassDiagram(code: string): UMLModel {
     return classes.get(name)!;
   };
 
+  // Namespace containment (C4 containers): collect the namespace tree from
+  // block paths, then attach every declared class to its leaf namespace.
+  const namespaceParents = new Map<string, string | null>();
+  for (const block of blocks) {
+    for (let i = 0; i < block.namespacePath.length; i += 1) {
+      const name = block.namespacePath[i];
+      if (!namespaceParents.has(name)) {
+        namespaceParents.set(name, i > 0 ? block.namespacePath[i - 1] : null);
+      }
+    }
+  }
+
   for (const block of blocks) {
     const { name, stereotype } = extractStereotype(block.className);
-    const cls = ensureClass(name);
+    const parentNs = block.namespacePath[block.namespacePath.length - 1] ?? null;
+    const cls = ensureClass(name, parentNs);
     cls.stereotype = stereotype;
     cls.isInterface = stereotype?.toLowerCase() === "interface";
     cls.isAbstract = stereotype?.toLowerCase() === "abstract";
@@ -231,6 +271,13 @@ export function parseMermaidClassDiagram(code: string): UMLModel {
     }
   }
 
+  // Implicit container nodes: namespaces referenced only as groupings must
+  // still exist in the model so they can be drilled into and serialized.
+  for (const [nsName, parent] of namespaceParents) {
+    const container = ensureClass(nsName, parent);
+    if (!container.stereotype) container.stereotype = "container";
+  }
+
   for (const raw of lines) {
     const line = stripComment(raw).trim();
     if (!line) continue;
@@ -240,8 +287,19 @@ export function parseMermaidClassDiagram(code: string): UMLModel {
     if (line.startsWith("namespace ")) continue;
 
     if (!line.includes("--") && !line.includes("..")) {
-      if (/^class\s+[A-Za-z_$][\w$]*$/i.test(line)) {
-        ensureClass(line.replace(/^class\s+/i, ""));
+      if (/^class\s+/i.test(line)) {
+        // Bare declarations AND annotated ones ("class Foo <<stereo>>") —
+        // previously the annotated form fell through and was dropped,
+        // losing the stereotype on round trip.
+        const { name, stereotype } = extractStereotype(line.replace(/^class\s+/i, ""));
+        if (/^[A-Za-z_$][\w$]*$/.test(name)) {
+          const cls = ensureClass(name);
+          if (stereotype) {
+            cls.stereotype = stereotype;
+            cls.isInterface = stereotype.toLowerCase() === "interface";
+            cls.isAbstract = stereotype.toLowerCase() === "abstract";
+          }
+        }
       }
       continue;
     }
@@ -272,23 +330,49 @@ export function parseMermaidClassDiagram(code: string): UMLModel {
 
 export function modelToMermaid(model: UMLModel): string {
   const lines: string[] = ["classDiagram", "    direction TB", ""];
-  for (const cls of model.classes) {
+
+  const renderClass = (cls: UMLClass, indent: string): void => {
     const stereotype = cls.stereotype ? `<<${cls.stereotype}>>` : "";
-    lines.push(`    class ${cls.name}${stereotype} {`);
+    lines.push(`${indent}class ${cls.name}${stereotype} {`);
     for (const attr of cls.attributes) {
       const vis = attr.visibility === "public" ? "+" : attr.visibility === "private" ? "-" : "#";
       const suffix = attr.isStatic ? "$" : "";
-      lines.push(`        ${vis}${attr.name}${attr.type !== "unknown" ? ` : ${attr.type}` : ""}${suffix}`);
+      lines.push(`${indent}    ${vis}${attr.name}${attr.type !== "unknown" ? ` : ${attr.type}` : ""}${suffix}`);
     }
     for (const method of cls.methods) {
       const vis = method.visibility === "public" ? "+" : method.visibility === "private" ? "-" : "#";
       const params = method.parameters.map((p) => `${p.name}${p.type ? `: ${p.type}` : ""}`).join(", ");
       const suffix = method.isStatic ? "$" : "";
-      lines.push(`        ${vis}${method.name}(${params}) : ${method.returnType}${suffix}`);
+      lines.push(`${indent}    ${vis}${method.name}(${params}) : ${method.returnType}${suffix}`);
     }
-    lines.push("    }");
+    lines.push(`${indent}}`);
     lines.push("");
+  };
+
+  // C4 containment: children are nested inside `namespace` blocks (one
+  // level per hierarchy step), top-level classes stay bare.
+  const byId = new Map(model.classes.map((c) => [c.id, c]));
+  const childrenOf = (parentId: string | null): UMLClass[] =>
+    model.classes.filter((c) => (c.parentId ?? null) === parentId && c.id !== parentId);
+  const emit = (parentId: string | null, indent: string): void => {
+    for (const cls of childrenOf(parentId)) {
+      const kids = childrenOf(cls.id);
+      if (kids.length > 0) {
+        lines.push(`${indent}namespace ${cls.name} {`);
+        emit(cls.id, `${indent}    `);
+        lines.push(`${indent}}`);
+        lines.push("");
+      } else {
+        renderClass(cls, indent);
+      }
+    }
+  };
+  emit(null, "    ");
+  // Guard against orphaned parents (parentId pointing at a dropped node).
+  for (const cls of model.classes) {
+    if (cls.parentId && !byId.has(cls.parentId)) renderClass(cls, "    ");
   }
+
   for (const link of model.links) {
     const mermaidOp = relationToMermaid(link.type);
     const left = link.fromMultiplicity ? `${link.from} "${link.fromMultiplicity}"` : link.from;

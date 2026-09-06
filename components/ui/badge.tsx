@@ -7,10 +7,10 @@ export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
 
 const variants: Record<NonNullable<BadgeProps["variant"]>, string> = {
   default: "bg-primary/10 text-primary",
-  accent: "bg-accent-soft text-[#92400E]",
+  accent: "bg-accent-soft text-teal-900",
   success: "bg-emerald-50 text-success",
   error: "bg-red-50 text-error",
-  warning: "bg-orange-50 text-orange-600",
+  warning: "bg-orange-50 text-orange-700",
   outline: "border border-line text-muted",
   "soft-blue": "bg-primary-50 text-primary-deep",
 };

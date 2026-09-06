@@ -31,24 +31,25 @@ const config: Config = {
           900: "#1E3A8A",
         },
         accent: {
-          DEFAULT: "#FBBF24",
-          soft: "#FEF3C7",
-          100: "#FEF3C7",
-          200: "#FDE68A",
-          300: "#FCD34D",
-          400: "#FBBF24",
-          500: "#F59E0B",
+          DEFAULT: "#14B8A6",
+          soft: "#CCFBF1",
+          100: "#CCFBF1",
+          200: "#99F6E4",
+          300: "#5EEAD4",
+          400: "#2DD4BF",
+          500: "#14B8A6",
         },
         muted: {
           DEFAULT: "#64748B",
           // slate-500: 4.6:1 on white — passes WCAG AA for normal text.
           // Reserve lighter grays only for large text or non-text decoration.
-          foreground: "#64748B",
+          foreground: "#475569",
         },
         success: "#10B981",
         error: "#EF4444",
-        // Deliberately distinct from accent (#FBBF24 amber): saturated orange.
-        warning: "#F97316",
+        // Distinct from accent (#14B8A6 teal): warm amber — a warning state
+        // should still read as attention-grabbing even in a cool palette.
+        warning: "#D97706",
         glass: "rgba(255,255,255,0.92)",
       },
       fontFamily: {

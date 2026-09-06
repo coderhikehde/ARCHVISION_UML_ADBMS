@@ -47,8 +47,49 @@ model User {
   accounts      Account[]
   sessions      Session[]
   projects      Project[]
+  idempotencyRecords IdempotencyRecord[]
+  memberships   WorkspaceMember[]
+  auditLogs     AuditLog[]
+  comments      Comment[]
+  adrs          Adr[]
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+}
+
+enum OrgRole {
+  admin
+  editor
+  viewer
+  guest
+}
+
+/// Multi-tenant workspace (Epic 3). Projects stay user-owned for now;
+/// organizations gate collaboration and will own shared projects when the
+/// real-time layer lands.
+model Organization {
+  id        String            @id @default(cuid())
+  name      String
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  members   WorkspaceMember[]
+  auditLogs AuditLog[]
+
+  @@index([createdAt])
+}
+
+/// Role-based membership. (organizationId, userId) uniqueness makes joins
+/// race-safe; role changes are enforced at the service layer.
+model WorkspaceMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           OrgRole      @default(viewer)
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
 }
 
 model Project {
@@ -87,6 +128,8 @@ model Diagram {
   exports          Export[]
   versions         DiagramVersion[]
   changeLog        DiagramChangeLog[]
+  comments         Comment[]
+  adrs             Adr[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
 
@@ -138,7 +181,10 @@ model DiagramVersion {
   changes     Json // string[] — human change notes for this snapshot
   createdAt   DateTime @default(now())
 
-  @@index([diagramId, version])
+  // Unique per diagram: the VersionService computes the next number from
+  // max+1 inside a transaction, and this constraint is the backstop that
+  // turns racing saves into a retryable conflict instead of a duplicate.
+  @@unique([diagramId, version])
 }
 
 model DiagramChangeLog {
@@ -148,6 +194,75 @@ model DiagramChangeLog {
   summary   String   @db.Text
   createdAt DateTime @default(now())
 
+  @@index([diagramId])
+}
+
+model IdempotencyRecord {
+  id        String   @id @default(cuid())
+  key       String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status    Int // stored HTTP status of the original response
+  body      Json // stored JSON body of the original response
+  createdAt DateTime @default(now())
+
+  @@unique([userId, key])
+  @@index([createdAt])
+}
+
+/// Append-only audit trail for security compliance (Epic 6).
+/// Every membership mutation and future org-scoped action lands here.
+model AuditLog {
+  id             String        @id @default(cuid())
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action         String
+  targetType     String?
+  targetId       String?
+  metadata       Json?
+  createdAt      DateTime      @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+/// Canvas comments pinned to diagrams (async collab — persisted per diagram).
+model Comment {
+  id        String   @id @default(cuid())
+  diagramId String
+  diagram   Diagram  @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text      String   @db.Text
+  x         Float
+  y         Float
+  createdAt DateTime @default(now())
+
+  @@index([diagramId])
+  @@index([authorId])
+}
+
+/// Architecture Decision Records persisted per diagram (async collab).
+model Adr {
+  id           String   @id @default(cuid())
+  diagramId    String
+  diagram      Diagram  @relation(fields: [diagramId], references: [id], onDelete: Cascade)
+  number       Int
+  title        String
+  status       String
+  context      String   @db.Text
+  decision     String   @db.Text
+  consequences String   @db.Text
+  linkedNodes  Json
+  authorId     String
+  author       User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([diagramId, number])
   @@index([diagramId])
 }
 

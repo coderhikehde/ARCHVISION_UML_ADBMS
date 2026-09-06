@@ -88,6 +88,10 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
     setMessages((prev) => [...prev, userMessage, assistantMessage]);
 
     const isDiagramAction = action === "transform";
+    // The stream can emit meta {fallback:true} and then error in the SAME
+    // flush — React state hasn't re-rendered yet, so onError must read a
+    // ref, not the render-time `fallback` value.
+    const fallbackRef = { current: false };
     const full = await stream(
       {
         message,
@@ -102,16 +106,23 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
             prev.map((m) => (m.id === assistantMessage.id ? { ...m, content: m.content + delta } : m))
           );
         },
+        onMeta: (meta) => {
+          if (meta.fallback) fallbackRef.current = true;
+        },
         onDone: (fullText) => {
           if (isDiagramAction && fullText.trim().length > 8) {
             engine.applyDiagram(fullText.trim());
           }
-          void storage.recordPrompt({
-            diagramId: engine.diagramId,
-            prompt: message,
-            response: fullText,
-            actionType: action === "explain" ? "explain" : action === "analyze" ? "analyze" : action === "transform" ? "transform" : "generate",
-          });
+          // Prompt history is auxiliary — record best-effort and never
+          // let a failed write surface as an unhandled rejection.
+          storage
+            .recordPrompt({
+              diagramId: engine.diagramId,
+              prompt: message,
+              response: fullText,
+              actionType: action === "explain" ? "explain" : action === "analyze" ? "analyze" : action === "transform" ? "transform" : "generate",
+            })
+            .catch((err) => console.warn("[ai-sidebar] prompt history not saved", err));
         },
         onError: (errorMessage) => {
           setMessages((prev) =>
@@ -119,7 +130,7 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
               m.id === assistantMessage.id
                 ? {
                     ...m,
-                    content: fallback
+                    content: fallbackRef.current
                       ? "Offline mode — local engine active. Your message was analyzed locally."
                       : `⚠️ ${errorMessage}`,
                   }
@@ -192,7 +203,7 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
       </div>
 
       {engine.selectedNodeId ? (
-        <div className="border-b border-amber-200/60 bg-accent-soft/50 px-5 py-2 text-[12px] text-[#92400E]">
+        <div className="border-b border-accent-200/60 bg-accent-soft/50 px-5 py-2 text-[12px] text-teal-900">
           <span className="font-bold">Node selected:</span> {engine.selectedNodeId} — edits will target this
           class.
         </div>
@@ -244,7 +255,7 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
                 type="button"
                 onClick={() => handleSuggestion(suggestion.action)}
                 disabled={streaming}
-                className="flex w-full items-center gap-2.5 rounded-xl border border-amber-200/70 bg-accent-soft/60 px-3.5 py-2.5 text-left text-[12.5px] font-semibold text-[#92400E] transition-all duration-200 hover:border-amber-300 hover:bg-accent-soft disabled:opacity-50"
+                className="flex w-full items-center gap-2.5 rounded-xl border border-accent-200/70 bg-accent-soft/60 px-3.5 py-2.5 text-left text-[12.5px] font-semibold text-teal-900 transition-all duration-200 hover:border-accent-300 hover:bg-accent-soft disabled:opacity-50"
               >
                 <suggestion.icon className="h-3.5 w-3.5" />
                 {suggestion.label}
@@ -267,7 +278,7 @@ export function AISidebar({ engine, open, onClose, mode }: AISidebarProps): Reac
               }
             }}
             placeholder={engine.selectedNodeId ? `Change ${engine.selectedNodeId}…` : "Describe a change, e.g. \"Make User inherit from Account\"…"}
-            className="w-full rounded-btn2 border border-line bg-white py-3 pl-4 pr-12 text-[13px] text-foreground shadow-sm outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+            className="focus-ring w-full rounded-btn2 border border-line bg-white py-3 pl-4 pr-12 text-[13px] text-foreground shadow-sm placeholder:text-muted-foreground transition-all duration-300"
             aria-label="Message the AI copilot"
             disabled={streaming}
           />

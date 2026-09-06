@@ -16,6 +16,7 @@ export function createNode(name: string, kind: ArchitectureNodeKind = "class"): 
     name,
     kind,
     stereotype: null,
+    parentId: null,
     attributes: [],
     methods: [],
     isAbstract: false,
@@ -116,6 +117,7 @@ export function inferNodeKind(name: string, stereotype: string | null = null): A
   const st = (stereotype ?? "").toLowerCase();
   if (st === "interface") return "interface";
   if (st === "abstract") return "abstract";
+  if (st === "container" || st === "namespace") return "package";
   if (st === "table" || st === "entity") return "table";
   if (st === "controller") return "controller";
   if (st === "service") return "service";
@@ -158,6 +160,7 @@ export function legacyToArchitecture(model: UMLModel): Architecture {
       name: cls.name,
       kind: inferNodeKind(cls.name, cls.stereotype),
       stereotype: cls.stereotype,
+      parentId: cls.parentId ?? null,
       attributes: cls.attributes.map((a) => ({
         name: a.name,
         type: a.type,
@@ -228,6 +231,7 @@ export function architectureToLegacy(arch: Architecture): UMLModel {
       id: n.id,
       name: n.name,
       stereotype: n.stereotype,
+      parentId: n.parentId,
       attributes: n.attributes.map((a) => ({
         name: a.name,
         type: a.type,

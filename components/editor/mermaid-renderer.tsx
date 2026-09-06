@@ -16,7 +16,7 @@ const THEME_COLORS = {
   primaryBorderColor: "#BFDBFE",
   lineColor: "#94A3B8",
   secondaryColor: "#F8FAFC",
-  tertiaryColor: "#FEF3C7",
+  tertiaryColor: "#CCFBF1",
   clusterBkg: "#F8FAFC",
   clusterBorder: "#E2E8F0",
   edgeLabelBackground: "#FFFFFF",
@@ -71,9 +71,9 @@ export function MermaidRenderer({ code, className, fit = true }: MermaidRenderer
       <div ref={containerRef} className={className} />
       {error ? (
         <div className="absolute inset-0 flex items-start justify-center bg-white/80 pt-16 backdrop-blur-sm">
-          <div className="flex max-w-md flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-accent-soft p-5 text-center">
-            <AlertTriangle className="h-5 w-5 text-amber-500" aria-hidden="true" />
-            <p className="text-sm font-semibold text-[#92400E]">Diagram syntax error</p>
+          <div className="flex max-w-md flex-col items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 p-5 text-center">
+            <AlertTriangle className="h-5 w-5 text-warning" aria-hidden="true" />
+            <p className="text-sm font-semibold text-amber-800">Diagram syntax error</p>
             <p className="text-xs leading-relaxed text-amber-700/80">{error.split("\n")[0]}</p>
           </div>
         </div>

@@ -143,6 +143,7 @@ export function applyChange(arch: Architecture, change: ArchitectureChange): Arc
         name: change.name,
         kind: change.stereotype === "table" ? "table" : change.stereotype === "interface" ? "interface" : "class",
         stereotype: change.stereotype ?? null,
+        parentId: null,
         attributes: [],
         methods: [],
         isAbstract: change.stereotype === "abstract",

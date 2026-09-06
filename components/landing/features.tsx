@@ -33,7 +33,7 @@ const FEATURES: Feature[] = [
     title: "Executive & engineering views",
     description:
       "One click hides private members and exposes the big picture for stakeholders; engineering mode shows every generic and modifier.",
-    accent: "from-amber-400 to-amber-600",
+    accent: "from-teal-500 to-teal-700",
   },
   {
     icon: ShieldCheck,

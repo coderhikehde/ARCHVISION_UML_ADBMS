@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { TEMPLATES, type EditorTemplate } from "@/lib/architecture/templates";
 import { storage } from "@/lib/data/storage";
+import { useWorkspaceStore } from "@/lib/data/workspace-store";
 import { NewDiagramModal } from "@/components/dashboard/new-diagram-modal";
 import type { DiagramType, Project } from "@/types/diagram";
 
@@ -41,6 +42,9 @@ export function FirstRunOnboarding({ projects }: { projects: Project[] }): React
         project.id,
         code
       );
+      // Keep the workspace store in sync so the dashboard reflects the new
+      // project/diagram when the user comes back.
+      void useWorkspaceStore.getState().reload();
       router.push(`/editor/${diagram.id}`);
     } catch (err) {
       toast("error", err instanceof Error ? `Couldn't start template: ${err.message}` : "Couldn't start template");

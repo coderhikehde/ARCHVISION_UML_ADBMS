@@ -58,9 +58,11 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
   },
 
   deleteProject: async (projectId: string): Promise<void> => {
-    for (const diagram of get().diagrams.filter((d) => d.projectId === projectId)) {
-      await storage.deleteDiagram(diagram.id);
-    }
+    // One atomic call in db mode (server cascades diagrams + children);
+    // local mode removes the project and its artifacts. Errors propagate
+    // so the UI can tell "couldn't delete" from "deleted" — no partial
+    // state: the reload below only runs on success.
+    await storage.deleteProject(projectId);
     await get().reload();
   },
 }));

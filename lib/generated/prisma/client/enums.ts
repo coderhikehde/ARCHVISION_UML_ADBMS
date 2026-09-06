@@ -9,6 +9,16 @@
 * 🟢 You can import this file directly.
 */
 
+export const OrgRole = {
+  admin: 'admin',
+  editor: 'editor',
+  viewer: 'viewer',
+  guest: 'guest'
+} as const
+
+export type OrgRole = (typeof OrgRole)[keyof typeof OrgRole]
+
+
 export const DiagramType = {
   CLASS: 'CLASS',
   SEQUENCE: 'SEQUENCE',

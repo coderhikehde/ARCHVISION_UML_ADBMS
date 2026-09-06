@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { cn } from "@/lib/utils";
+import { serviceIconForStereotype } from "@/lib/architecture/cloud-icons";
 import type { UMLFlowNode } from "@/lib/mermaid/transformer";
 import type { ArchitectureNodeKind } from "@/types/diagram";
 
@@ -197,9 +198,24 @@ function UMLClassNode({ data, selected }: NodeProps<UMLFlowNode>): React.ReactEl
       >
         <span className={cn("h-2 w-2 shrink-0 rounded-full", style?.dot ?? (isInterface ? "bg-primary/70" : isAbstract ? "bg-accent" : "bg-slate-300"))} />
         <div className="min-w-0 flex-1 text-center">
-          {stereotype ? (
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{stereotype}</p>
-          ) : null}
+          {(() => {
+            const service = serviceIconForStereotype(stereotype);
+            if (service) {
+              const ServiceGlyph = service.icon;
+              return (
+                <span
+                  className="mb-0.5 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9.5px] font-bold uppercase tracking-wider"
+                  style={{ backgroundColor: `${service.color}1A`, color: service.color }}
+                >
+                  <ServiceGlyph className="h-3 w-3" aria-hidden />
+                  {service.label}
+                </span>
+              );
+            }
+            return stereotype ? (
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{stereotype}</p>
+            ) : null;
+          })()}
           <div
             className={cn(
               "truncate font-bold tracking-tight text-foreground",

@@ -30,7 +30,7 @@ export function StatsBar({ diagrams, projects, templates, storageMode }: StatsBa
       label: "Storage",
       value: storageMode === "db" ? "Server" : "Browser",
       note: storageMode === "db" ? "PostgreSQL — saved server-side" : "local-only — saved on this device",
-      gradient: "from-amber-400 to-amber-600",
+      gradient: "from-teal-500 to-teal-700",
     },
   ];
 

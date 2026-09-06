@@ -107,7 +107,7 @@ export function VersionHistoryModal({
             onChange={(e) => setLabel(e.target.value)}
             placeholder="Snapshot label (optional, e.g. 'Pre-refactor')"
             aria-label="Snapshot label"
-            className="min-w-0 flex-1 rounded-btn2 border border-line bg-white px-3 py-2 text-[12.5px] text-foreground shadow-sm outline-none transition-all focus:border-primary focus:shadow-[0_0_0_3px_rgba(37,99,235,0.12)]"
+            className="focus-ring min-w-0 flex-1 rounded-btn2 border border-line bg-white px-3 py-2 text-[12.5px] text-foreground shadow-sm transition-all"
           />
           <Button
             onClick={() => {

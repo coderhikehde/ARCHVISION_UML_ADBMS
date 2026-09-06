@@ -102,7 +102,7 @@ export function DocsModal({ open, onOpenChange, mermaidCode, diagramName, archit
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-6 w-6 text-amber-400" />
+                  <Sparkles className="h-6 w-6 text-teal-600" />
                   <p className="text-[12.5px] text-muted-foreground">
                     {error ?? "Click generate to create the design document."}
                   </p>

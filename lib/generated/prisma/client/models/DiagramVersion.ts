@@ -253,6 +253,7 @@ export type DiagramVersionOrderByWithRelationInput = {
 
 export type DiagramVersionWhereUniqueInput = Prisma.AtLeast<{
   id?: string
+  diagramId_version?: Prisma.DiagramVersionDiagramIdVersionCompoundUniqueInput
   AND?: Prisma.DiagramVersionWhereInput | Prisma.DiagramVersionWhereInput[]
   OR?: Prisma.DiagramVersionWhereInput[]
   NOT?: Prisma.DiagramVersionWhereInput | Prisma.DiagramVersionWhereInput[]
@@ -264,7 +265,7 @@ export type DiagramVersionWhereUniqueInput = Prisma.AtLeast<{
   changes?: Prisma.JsonFilter<"DiagramVersion">
   createdAt?: Prisma.DateTimeFilter<"DiagramVersion"> | Date | string
   diagram?: Prisma.XOR<Prisma.DiagramScalarRelationFilter, Prisma.DiagramWhereInput>
-}, "id">
+}, "id" | "diagramId_version">
 
 export type DiagramVersionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
@@ -380,6 +381,11 @@ export type DiagramVersionListRelationFilter = {
 
 export type DiagramVersionOrderByRelationAggregateInput = {
   _count?: Prisma.SortOrder
+}
+
+export type DiagramVersionDiagramIdVersionCompoundUniqueInput = {
+  diagramId: string
+  version: number
 }
 
 export type DiagramVersionCountOrderByAggregateInput = {

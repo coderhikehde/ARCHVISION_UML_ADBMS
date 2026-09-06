@@ -31,7 +31,7 @@ const STEPS: WorkflowStep[] = [
   },
   {
     icon: FileCode2,
-    iconClass: "from-amber-400 to-amber-600 shadow-amber-500/30",
+    iconClass: "from-teal-500 to-teal-700 shadow-teal-500/30",
     step: "Step 03",
     title: "Refine, validate & ship",
     text: "Edit via AI prompts, run the architecture critic, then generate code in four languages and export anywhere.",

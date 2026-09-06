@@ -24,7 +24,7 @@ async function renderMermaidSvg(code: string): Promise<string> {
       primaryBorderColor: "#BFDBFE",
       lineColor: "#94A3B8",
       secondaryColor: "#F8FAFC",
-      tertiaryColor: "#FEF3C7",
+      tertiaryColor: "#CCFBF1",
       clusterBkg: "#F8FAFC",
       clusterBorder: "#E2E8F0",
       edgeLabelBackground: "#FFFFFF",

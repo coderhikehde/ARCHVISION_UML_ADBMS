@@ -136,9 +136,9 @@ export function MonacoPanel({
       </div>
 
       {error ? (
-        <div className="flex items-start gap-2 border-t border-amber-200 bg-accent-soft px-4 py-2.5">
-          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-500" />
-          <p className="text-[12px] leading-relaxed text-[#92400E]">{error}</p>
+        <div className="flex items-start gap-2 border-t border-amber-200 bg-amber-50 px-4 py-2.5">
+          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+          <p className="text-[12px] leading-relaxed text-amber-800">{error}</p>
         </div>
       ) : null}
 

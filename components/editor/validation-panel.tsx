@@ -80,7 +80,7 @@ export function ValidationPanel({ result, open, onClose }: ValidationPanelProps)
                 <p className="text-muted-foreground">critical</p>
               </div>
               <div>
-                <p className="font-bold text-amber-500">{warnings}</p>
+                <p className="font-bold text-amber-700">{warnings}</p>
                 <p className="text-muted-foreground">warnings</p>
               </div>
               <div>
@@ -92,7 +92,7 @@ export function ValidationPanel({ result, open, onClose }: ValidationPanelProps)
           <Progress
             value={score}
             className="mt-3 h-2.5"
-            indicatorClassName={score >= 90 ? "bg-success" : score >= 70 ? "bg-amber-400" : "bg-error"}
+            indicatorClassName={score >= 90 ? "bg-success" : score >= 70 ? "bg-warning" : "bg-error"}
           />
         </div>
 
@@ -150,7 +150,7 @@ export function ValidationPanel({ result, open, onClose }: ValidationPanelProps)
                     {issue.severity === "critical" ? (
                       <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-error" />
                     ) : issue.severity === "warning" ? (
-                      <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                      <CircleAlert className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
                     ) : (
                       <Info className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
                     )}

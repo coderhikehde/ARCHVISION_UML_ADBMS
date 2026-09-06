@@ -24,10 +24,12 @@ interface CommentsActions {
   removeComment: (diagramId: string, id: string) => void;
   setOpen: (open: boolean) => void;
   focusComment: (id: string | null) => void;
+  syncFromServer: (diagramId: string) => Promise<void>;
 }
 
 const STORAGE_KEY = "archvision:comments";
 const CURRENT_USER = "you";
+const DB_MODE = process.env.NEXT_PUBLIC_DATA_MODE === "db";
 
 /** Stable empty array — safe to return from zustand selectors (referential stability). */
 export const EMPTY_COMMENTS: DiagramComment[] = [];
@@ -65,6 +67,13 @@ export const useCommentsStore = create<CommentsState & CommentsActions>((set, ge
     };
     save(next);
     set({ comments: next, open: true, focusedId: id });
+    if (DB_MODE) {
+      void fetch(`/api/diagrams/${encodeURIComponent(diagramId)}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: comment.text, x: comment.x, y: comment.y }),
+      }).catch(() => undefined);
+    }
     return id;
   },
 
@@ -84,6 +93,39 @@ export const useCommentsStore = create<CommentsState & CommentsActions>((set, ge
     };
     save(next);
     set({ comments: next, focusedId: get().focusedId === id ? null : get().focusedId });
+    if (DB_MODE) {
+      void fetch(`/api/comments/${encodeURIComponent(id)}`, { method: "DELETE" }).catch(() => undefined);
+    }
+  },
+
+  /** Hydrate from server when in DB mode — merges server comments with local cache. */
+  syncFromServer: async (diagramId: string) => {
+    if (!DB_MODE) return;
+    try {
+      const res = await fetch(`/api/diagrams/${encodeURIComponent(diagramId)}/comments`);
+      if (!res.ok) return;
+      const json = (await res.json()) as { ok?: boolean; data?: Array<{ id: string; diagramId: string; authorId: string; text: string; x: number; y: number; createdAt: string }> };
+      if (!json.ok || !Array.isArray(json.data)) return;
+      const serverComments: DiagramComment[] = json.data.map((r) => ({
+        id: r.id,
+        diagramId: r.diagramId,
+        author: r.authorId,
+        text: r.text,
+        x: r.x,
+        y: r.y,
+        createdAt: new Date(r.createdAt).getTime(),
+      }));
+      const current = get().comments[diagramId] ?? [];
+      // Merge: server wins for same id, keep local-only comments that haven't synced yet
+      const serverIds = new Set(serverComments.map((c) => c.id));
+      const localOnly = current.filter((c) => !serverIds.has(c.id) && c.id.startsWith("c_"));
+      const merged = [...serverComments, ...localOnly];
+      const next = { ...get().comments, [diagramId]: merged };
+      save(next);
+      set({ comments: next });
+    } catch {
+      // offline — keep local cache
+    }
   },
 
   setOpen: (open) => set({ open }),
