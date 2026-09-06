@@ -7,7 +7,6 @@ import { signIn } from "next-auth/react";
 import { GithubIcon } from "@/components/ui/brand-icons";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/components/ui/toast";
 
 export type AuthMode = "login" | "register";
 
@@ -17,14 +16,13 @@ interface AuthFormProps {
   hasGoogle?: boolean;
 }
 
-export function AuthForm({ mode, hasGithub = false, hasGoogle = false }: AuthFormProps): React.ReactElement {
+export function AuthForm({ mode }: AuthFormProps): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = React.useState<"demo" | "github" | "google" | null>(null);
   const [error, setError] = React.useState<string | null>(null);
 
   const isLogin = mode === "login";
-  const oauthUnconfigured = !hasGithub || !hasGoogle;
 
   const handleDemo = async (): Promise<void> => {
     setLoading("demo");
@@ -38,19 +36,22 @@ export function AuthForm({ mode, hasGithub = false, hasGoogle = false }: AuthFor
         router.push(next && next.startsWith("/") ? next : "/dashboard");
         router.refresh();
       }
+    } catch {
+      setError("An unexpected error occurred.");
     } finally {
       setLoading(null);
     }
   };
 
-  const handleOAuth = async (provider: "github" | "google", configured: boolean): Promise<void> => {
-    if (!configured) {
-      toast("error", `${provider === "github" ? "GitHub" : "Google"} OAuth not configured by administrator. Use demo login.`);
-      return;
-    }
+  const handleOAuth = async (provider: "github" | "google"): Promise<void> => {
     setLoading(provider);
     setError(null);
-    await signIn(provider, { callbackUrl: "/dashboard" });
+    try {
+      await signIn(provider, { callbackUrl: "/dashboard" });
+    } catch {
+      setError("Failed to redirect to provider.");
+      setLoading(null);
+    }
   };
 
   return (
@@ -83,9 +84,9 @@ export function AuthForm({ mode, hasGithub = false, hasGoogle = false }: AuthFor
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="w-full gap-2"
           disabled={loading !== null}
-          onClick={() => void handleOAuth("github", hasGithub)}
+          onClick={() => void handleOAuth("github")}
           loading={loading === "github"}
           aria-label="Continue with GitHub"
         >
@@ -95,9 +96,9 @@ export function AuthForm({ mode, hasGithub = false, hasGoogle = false }: AuthFor
         <Button
           type="button"
           variant="outline"
-          className="w-full"
+          className="w-full gap-2"
           disabled={loading !== null}
-          onClick={() => void handleOAuth("google", hasGoogle)}
+          onClick={() => void handleOAuth("google")}
           loading={loading === "google"}
           aria-label="Continue with Google"
         >
@@ -111,21 +112,12 @@ export function AuthForm({ mode, hasGithub = false, hasGoogle = false }: AuthFor
         </Button>
       </div>
 
-      {oauthUnconfigured ? (
-        <p className="text-center text-xs text-slate-400">
-          OAuth requires GITHUB_CLIENT_ID / GOOGLE_CLIENT_ID in .env
-        </p>
-      ) : null}
-
       <div className="rounded-xl border border-dashed border-line bg-surface px-4 py-3">
         <p className="text-center text-[12.5px] font-semibold text-foreground">
-          {isLogin ? "Email sign-in isn't available yet" : "Accounts are created via OAuth or demo access"}
+          {isLogin ? "Instant Access" : "Accounts are created via OAuth or demo access"}
         </p>
         <p className="mt-1 text-center text-[11.5px] leading-relaxed text-muted">
-          This preview build offers{" "}
-          <span className="font-semibold text-foreground">demo access</span> and{" "}
-          <span className="font-semibold text-foreground">GitHub / Google sign-in</span>. Email and
-          password accounts are on the roadmap.
+          Use <span className="font-semibold text-foreground">demo access</span> or sign in directly with <span className="font-semibold text-foreground">GitHub</span>.
         </p>
       </div>
 
