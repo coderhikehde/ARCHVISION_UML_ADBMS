@@ -21,7 +21,6 @@ export const authConfig: NextAuthConfig = {
           id: "demo-user",
           name: "Demo Explorer",
           email: "demo@archvision.ai",
-          image: null,
         };
       },
     }),
@@ -33,6 +32,7 @@ export const authConfig: NextAuthConfig = {
   ],
   session: {
     strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60,
   },
   pages: {
     signIn: "/login",
@@ -40,11 +40,17 @@ export const authConfig: NextAuthConfig = {
   },
   callbacks: {
     async jwt({ token, user }) {
-      if (user) token.sub = user.id;
+      if (user) {
+        token.sub = user.id || "demo-user";
+        token.email = user.email || "demo@archvision.ai";
+        token.name = user.name || "User";
+      }
       return token;
     },
     async session({ session, token }) {
-      if (token?.sub && session.user) session.user.id = token.sub;
+      if (session.user) {
+        session.user.id = (token.sub as string) || "demo-user";
+      }
       return session;
     },
   },
