@@ -1,10 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import * as React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Lightbulb,
-  X,
   Copy,
   Check,
   Loader2,
@@ -72,7 +72,7 @@ export function ExplainUMLModal({
 
       if (!res.ok) throw new Error("Failed to fetch");
 
-      const data = await res.json() as { explanation: string };
+      const data = (await res.json()) as { explanation: string };
       setExplanation(data.explanation);
     } catch {
       setError("Could not generate explanation. Please try again.");
