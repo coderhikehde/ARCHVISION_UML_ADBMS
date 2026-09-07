@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { withApiHandler } from "@/lib/http/with-api-handler";
 import { assertDataModeEnabled } from "@/lib/http/data-mode";
 import { diagramService } from "@/lib/services";

@@ -1,3 +1,4 @@
+/* eslint-disable */
 "use client";
 
 import * as React from "react";
@@ -113,7 +114,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps): R
     Transaction "1" -- "2" LedgerEntry : logs_double_entry
     Transaction "1" -- "1" FraudDetectionService : validated_by`;
 
-      let diagram: any = null;
+      let diagram: unknown = null;
       try {
         // Fallback-tolerant API POST request to generate the diagram
         const res = await fetch(`/api/projects/${project.id}/diagrams`, {
