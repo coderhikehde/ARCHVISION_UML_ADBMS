@@ -7,10 +7,12 @@ export const metadata: Metadata = {
   title: "Diagram editor",
 };
 
-/** Mirrors hasApiKey/getModel in app/api/ai/chat/route.ts — request-time, not build-time. */
 function resolveAiMode(): AiMode {
-  if (process.env.OPENAI_API_KEY) return "openai";
-  if (process.env.ANTHROPIC_API_KEY) return "anthropic";
+  const openaiKey = process.env.OPENAI_API_KEY?.trim();
+  const anthropicKey = process.env.ANTHROPIC_API_KEY?.trim();
+  const isValid = (k?: string) => !!k && k !== "sk-dummy" && !k.startsWith("sk-dummy") && k !== "dummy";
+  if (isValid(openaiKey)) return "openai";
+  if (isValid(anthropicKey)) return "anthropic";
   return "offline";
 }
 
