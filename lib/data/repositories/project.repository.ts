@@ -58,6 +58,17 @@ export function projectRepository(client: DbClient): ProjectRepository {
     },
 
     async create(input, userId) {
+      // Auto-upsert User row in PostgreSQL if not already created by OAuth session
+      await client.user.upsert({
+        where: { id: userId },
+        update: {},
+        create: {
+          id: userId,
+          email: userId === "demo-user" ? "demo@archvision.ai" : `${userId}@archvision.user`,
+          name: userId === "demo-user" ? "Demo Explorer" : "ArchVision User",
+        },
+      }).catch(() => {});
+
       const row = await client.project.create({
         data: {
           id: input.id,
@@ -80,9 +91,6 @@ export function projectRepository(client: DbClient): ProjectRepository {
     },
 
     async remove(id) {
-      // Diagram → Project is onDelete: Cascade, so every diagram and its
-      // child rows (prompts, reports, versions, change log, exports) are
-      // removed by the database in the same statement.
       await client.project.delete({ where: { id } });
     },
   };
