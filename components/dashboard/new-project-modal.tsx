@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { FolderPlus, Loader2, Lock } from "lucide-react";
 import {
   Modal,
@@ -33,6 +34,7 @@ const VISIBILITY_OPTIONS = [
 ] as const;
 
 export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps): React.ReactElement {
+  const router = useRouter();
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [visibility, setVisibility] = React.useState<(typeof VISIBILITY_OPTIONS)[number]["value"]>("private");
@@ -50,10 +52,98 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps): R
     if (!name.trim()) return;
     setCreating(true);
     try {
-      await storage.createProject({ name: name.trim(), description: description.trim() || undefined });
-      toast("success", `Project "${name.trim()}" created`);
+      // 1. Create the project
+      const project = await storage.createProject({ 
+        name: name.trim(), 
+        description: description.trim() || undefined 
+      });
+
+      // 2. High-quality FinTech Ledger UML starter template
+      const defaultCode = `classDiagram
+    class User {
+        +UUID userId PK
+        +String fullName
+        +String email UK
+        +String kycStatus
+        +DateTime createdAt
+        +createWallet()
+        +verifyKYC()
+    }
+
+    class Wallet {
+        +UUID walletId PK
+        +UUID userId FK
+        +Decimal balance
+        +String currency
+        +Boolean isFrozen
+        +deposit(amount)
+        +withdraw(amount)
+    }
+
+    class Transaction {
+        +UUID transactionId PK
+        +UUID sourceWalletId FK
+        +UUID destWalletId FK
+        +Decimal amount
+        +String status
+        +DateTime timestamp
+        +executeTransaction()
+        +rollback()
+    }
+
+    class LedgerEntry {
+        +UUID entryId PK
+        +UUID transactionId FK
+        +Decimal debitAmount
+        +Decimal creditAmount
+        +String entryType
+        +recordEntry()
+    }
+
+    class FraudDetectionService {
+        +UUID checkId PK
+        +UUID transactionId FK
+        +Float riskScore
+        +Boolean isApproved
+        +evaluateRisk()
+    }
+
+    User "1" -- "1..*" Wallet : owns
+    Wallet "1" -- "0..*" Transaction : initiates
+    Transaction "1" -- "2" LedgerEntry : logs_double_entry
+    Transaction "1" -- "1" FraudDetectionService : validated_by`;
+
+      let diagram: any = null;
+      try {
+        // Fallback-tolerant API POST request to generate the diagram
+        const res = await fetch(`/api/projects/${project.id}/diagrams`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: "Payment & Ledger Architecture",
+            type: "CLASS",
+            mermaidCode: defaultCode
+          })
+        });
+        if (res.ok) {
+          diagram = await res.json();
+        }
+      } catch (diagramErr) {
+        console.error("Failed to create default diagram:", diagramErr);
+      }
+
+      toast("success", `Project "${name.trim()}" created! Loading workspace...`);
       onOpenChange(false);
+      
+      // Reload workspace store state
       await useWorkspaceStore.getState().reload();
+
+      // Redirect user directly to the new diagram's editor or the project dashboard
+      if (diagram && diagram.id) {
+        router.push(`/editor/${diagram.id}`);
+      } else {
+        router.push(`/dashboard?projectId=${project.id}`);
+      }
     } catch (err) {
       toast("error", err instanceof Error ? `Failed to create project: ${err.message}` : "Failed to create project");
     } finally {
@@ -67,8 +157,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps): R
         <ModalHeader>
           <ModalTitle>Create a project</ModalTitle>
           <ModalDescription>
-            Projects group related diagrams into one workspace. Projects are private to your account —
-            team sharing is on the roadmap.
+            Projects group related diagrams into one workspace. Projects are private to your account.
           </ModalDescription>
         </ModalHeader>
 
