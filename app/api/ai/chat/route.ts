@@ -7,9 +7,6 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/**
- * POST /api/ai/chat — streaming AI assistant (SSE).
- */
 export const POST = withApiHandler(
   async (ctx) => {
     const input = await ctx.body<AiChatRequest>();
