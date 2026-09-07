@@ -1,3 +1,4 @@
+import { Sparkles } from "lucide-react";
 "use client";
 
 import * as React from "react";
@@ -97,6 +98,9 @@ export function EditorShell({
   const router = useRouter();
   const engine = useDiagram(diagramId);
   const ui = useEditorUI();
+  React.useEffect(() => {
+    ui.setSidePanel("ai");
+  }, []);
   const canvasRef = React.useRef<HTMLDivElement>(null);
   const [exporting, setExporting] = React.useState<ExportFormat | null>(null);
   const [overrideBlock, setOverrideBlock] = React.useState(false);
