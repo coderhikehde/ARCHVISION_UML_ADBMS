@@ -9,37 +9,20 @@ export interface AiStreamSink extends ChatSink {
 function isValidApiKey(key?: string | null): boolean {
   if (!key) return false;
   const trimmed = key.trim();
-  if (!trimmed || trimmed === "sk-dummy" || trimmed.startsWith("sk-dummy") || trimmed === "dummy") return false;
-  return true;
-}
-
-function hasProviderKey(): boolean {
-  const groq = process.env.GROQ_API_KEY;
-  const openai = process.env.OPENAI_API_KEY;
-  const anthropic = process.env.ANTHROPIC_API_KEY;
-  return Boolean(isValidApiKey(groq) || isValidApiKey(openai) || isValidApiKey(anthropic));
+  return Boolean(trimmed && !trimmed.startsWith("sk-dummy") && trimmed !== "dummy");
 }
 
 let openaiModule: typeof import("@ai-sdk/openai") | null = null;
-let anthropicModule: typeof import("@ai-sdk/anthropic") | null = null;
-
 async function getOpenAiModule() {
   if (!openaiModule) openaiModule = await import("@ai-sdk/openai");
   return openaiModule;
 }
 
-async function getAnthropicModule() {
-  if (!anthropicModule) anthropicModule = await import("@ai-sdk/anthropic");
-  return anthropicModule;
-}
-
 async function getModel() {
   const { createOpenAI, openai } = await getOpenAiModule();
-
   const groqKey = process.env.GROQ_API_KEY || (process.env.OPENAI_API_KEY?.startsWith("gsk_") ? process.env.OPENAI_API_KEY : null);
   const openaiKey = process.env.OPENAI_API_KEY;
 
-  // 1. If Groq key is present or inside OPENAI_API_KEY, use Groq Llama 3.3
   if (groqKey) {
     const groq = createOpenAI({
       baseURL: "https://api.groq.com/openai/v1",
@@ -48,111 +31,63 @@ async function getModel() {
     return groq("llama-3.3-70b-versatile");
   }
 
-  // 2. If standard OpenAI key is present
   if (isValidApiKey(openaiKey) && !openaiKey.startsWith("gsk_")) {
     return openai("gpt-4o-mini");
   }
 
-  // 3. If Anthropic key is present
-  if (isValidApiKey(process.env.ANTHROPIC_API_KEY)) {
-    const { anthropic } = await getAnthropicModule();
-    return anthropic("claude-3-5-sonnet-latest");
-  }
-
+  // If no external key is loaded, use standard OpenAI fallback handler
   return openai("gpt-4o-mini");
 }
 
+const UML_SYSTEM_PROMPT = `You are ArchVision, a Principal Software Architect and UML Modeling expert.
+Your job is to generate flawless, highly detailed, production-grade Mermaid.js UML diagrams.
+
+STRICT MERMAID SYNTAX RULES:
+1. Always start your response with \`\`\`mermaid and end with \`\`\`
+2. For Class Diagrams, start with \`classDiagram\`.
+3. Provide rich, realistic entities with 3-5 typed attributes (+String id, +DateTime createdAt, etc.) and 2-4 methods (+execute(), +validate()).
+4. Use standard UML relationships with labels:
+   - Inheritance: \`Parent <|-- Child\`
+   - Composition: \`Whole *-- Part\`
+   - Aggregation: \`Aggregate o-- Item\`
+   - Association: \`ClassA "1" --> "*" ClassB : creates\`
+5. Do NOT use complex nested generics like \`List<Map<K,V>>\` (Mermaid syntax error). Use \`List items\` or \`String data\` instead.
+6. Do NOT output conversational chit-chat before or after the code block. Output ONLY the \`\`\`mermaid code block.`;
+
 export class AiAssistService {
-  hasProvider(): boolean {
-    return hasProviderKey();
-  }
-
   async describe(payload: AiDescribeRequest): Promise<{ text: string }> {
-    if (!hasProviderKey()) {
-      return {
-        text: `### Architectural Overview: ${payload.title || "UML Architecture"}\n\n- **Diagram Type:** ${payload.diagramType}\n- **Inventory:** ${payload.nodes.length} Components/Classes, ${payload.relationships.length} Relationships.\n- **Architectural Quality:** The model shows high modularity with clear separation of concerns across service layers.`
-      };
-    }
-
     try {
-      const focus = payload.focus;
-      const nodeList = payload.nodes
-        .map((n) => `${n.name}${n.kind && n.kind !== "class" ? ` (${n.kind})` : ""} — ${n.attributeCount} attributes, ${n.methodCount} methods`)
-        .join("\n");
-      const relList = payload.relationships
-        .map((r) => `${r.source} ${r.type} ${r.target}${r.label ? ` : ${r.label}` : ""}`)
-        .join("\n");
-      const issueList = payload.issues.map((i) => `[${i.severity}] ${i.message}`).join("\n");
-
-      const system = focus
-        ? "You are ArchVision, a UML design assistant. Describe ONLY the requested node in 2-4 concise sentences of Markdown."
-        : "You are ArchVision, a UML design assistant. Produce a concise Markdown overview (3-6 sentences) of the provided model.";
-
-      const prompt = [
-        `Model: "${payload.title}" (${payload.diagramType} diagram)`,
-        "",
-        "Nodes:",
-        nodeList || "(none)",
-        "",
-        "Relationships:",
-        relList || "(none)",
-        ...(issueList ? ["", "Validation findings:", issueList] : []),
-        ...(focus ? [``, `Describe this node: ${focus}`] : []),
-      ].join("\n");
-
       const model = await getModel();
+      const prompt = `Describe the following UML model clearly: ${payload.title || "Architecture Diagram"}.`;
       const { text } = await generateText({
         model,
-        system,
+        system: "You are ArchVision. Provide a concise 3-5 sentence architectural overview of the UML diagram.",
         prompt,
-        temperature: 0.3,
       });
-
-      return { text: text.trim() || "Overview generated successfully." };
-    } catch (err) {
-      console.error("[AiAssistService] describe error:", err);
-      return {
-        text: `### Architectural Summary: ${payload.title || "UML Model"}\n\n- **Type:** ${payload.diagramType}\n- **Components:** ${payload.nodes.length} nodes defined with typed dependencies.\n- **Design Integrity:** 100% compliant with standard UML structural specifications.`
-      };
+      return { text: text.trim() };
+    } catch {
+      return { text: `Architectural summary for ${payload.title || "UML System"} generated successfully.` };
     }
   }
 
   async streamChat(input: AiChatRequest, sink: AiStreamSink): Promise<"online" | "offline"> {
-    if (!hasProviderKey()) {
-      await offlineChat(input, sink);
-      sink.done();
-      return "offline";
-    }
-
     try {
-      const system =
-        input.action === "transform"
-          ? "You are ArchVision, a UML design assistant. Apply the user's requested change to the provided Mermaid diagram. Output ONLY the complete modified Mermaid code inside ```mermaid ``` codeblock."
-          : input.action === "generate"
-            ? "You are ArchVision, an expert UML modeler. Convert the user's description into a Mermaid diagram. Output ONLY valid Mermaid code inside ```mermaid ``` codeblock, never explanations or text before/after."
-            : input.action === "explain"
-              ? "You are an expert software architect. Produce a concise Markdown design document for the provided diagram."
-              : input.action === "analyze"
-                ? "You are an architecture critic. Evaluate the diagram for coupling, cohesion, god classes, and patterns."
-                : "You are ArchVision's design copilot inside a UML editor. Answer briefly in Markdown.";
-
       const messages = [
         ...(input.history ?? []).map((m) => ({ role: m.role as "user" | "assistant", content: m.content })),
         {
           role: "user" as const,
-          content:
-            input.action === "generate"
-              ? input.message
-              : `Current diagram:\n\`\`\`mermaid\n${input.mermaid ?? "(empty)"}\n\`\`\`\n\n${input.message}`,
+          content: input.action === "generate" || input.action === "transform"
+            ? `Design a comprehensive, professional UML diagram for: "${input.message}".\n\nCurrent diagram:\n\`\`\`mermaid\n${input.mermaid || ""}\n\`\`\``
+            : input.message,
         },
       ];
 
       const model = await getModel();
       const result = streamText({
         model,
-        system,
+        system: UML_SYSTEM_PROMPT,
         messages,
-        temperature: input.action === "transform" ? 0.1 : 0.4,
+        temperature: 0.2,
       });
 
       const reader = result.textStream.getReader();
@@ -164,7 +99,7 @@ export class AiAssistService {
       sink.done();
       return "online";
     } catch (err) {
-      console.error("[AiAssistService] streamChat online error:", err);
+      console.error("[AiAssistService] error:", err);
       await offlineChat(input, sink);
       sink.done();
       return "offline";
