@@ -14,7 +14,10 @@ function isValidApiKey(key?: string | null): boolean {
 }
 
 function hasProviderKey(): boolean {
-  return Boolean(isValidApiKey(process.env.OPENAI_API_KEY) || isValidApiKey(process.env.ANTHROPIC_API_KEY));
+  const groq = process.env.GROQ_API_KEY;
+  const openai = process.env.OPENAI_API_KEY;
+  const anthropic = process.env.ANTHROPIC_API_KEY;
+  return Boolean(isValidApiKey(groq) || isValidApiKey(openai) || isValidApiKey(anthropic));
 }
 
 let openaiModule: typeof import("@ai-sdk/openai") | null = null;
@@ -31,12 +34,32 @@ async function getAnthropicModule() {
 }
 
 async function getModel() {
-  if (isValidApiKey(process.env.OPENAI_API_KEY)) {
-    const { openai } = await getOpenAiModule();
+  const { createOpenAI, openai } = await getOpenAiModule();
+
+  const groqKey = process.env.GROQ_API_KEY || (process.env.OPENAI_API_KEY?.startsWith("gsk_") ? process.env.OPENAI_API_KEY : null);
+  const openaiKey = process.env.OPENAI_API_KEY;
+
+  // 1. If Groq key is present or inside OPENAI_API_KEY, use Groq Llama 3.3
+  if (groqKey) {
+    const groq = createOpenAI({
+      baseURL: "https://api.groq.com/openai/v1",
+      apiKey: groqKey,
+    });
+    return groq("llama-3.3-70b-versatile");
+  }
+
+  // 2. If standard OpenAI key is present
+  if (isValidApiKey(openaiKey) && !openaiKey.startsWith("gsk_")) {
     return openai("gpt-4o-mini");
   }
-  const { anthropic } = await getAnthropicModule();
-  return anthropic("claude-3-5-sonnet-latest");
+
+  // 3. If Anthropic key is present
+  if (isValidApiKey(process.env.ANTHROPIC_API_KEY)) {
+    const { anthropic } = await getAnthropicModule();
+    return anthropic("claude-3-5-sonnet-latest");
+  }
+
+  return openai("gpt-4o-mini");
 }
 
 export class AiAssistService {
@@ -77,15 +100,17 @@ export class AiAssistService {
         ...(focus ? [``, `Describe this node: ${focus}`] : []),
       ].join("\n");
 
+      const model = await getModel();
       const { text } = await generateText({
-        model: await getModel(),
+        model,
         system,
         prompt,
         temperature: 0.3,
       });
 
       return { text: text.trim() || "Overview generated successfully." };
-    } catch {
+    } catch (err) {
+      console.error("[AiAssistService] describe error:", err);
       return {
         text: `### Architectural Summary: ${payload.title || "UML Model"}\n\n- **Type:** ${payload.diagramType}\n- **Components:** ${payload.nodes.length} nodes defined with typed dependencies.\n- **Design Integrity:** 100% compliant with standard UML structural specifications.`
       };
@@ -102,9 +127,9 @@ export class AiAssistService {
     try {
       const system =
         input.action === "transform"
-          ? "You are ArchVision, a UML design assistant. Apply the user's requested change to the provided Mermaid diagram. Output ONLY the complete modified Mermaid code."
+          ? "You are ArchVision, a UML design assistant. Apply the user's requested change to the provided Mermaid diagram. Output ONLY the complete modified Mermaid code inside ```mermaid ``` codeblock."
           : input.action === "generate"
-            ? "You are ArchVision, an expert UML modeler. Convert the user's description into a Mermaid diagram. Output ONLY valid Mermaid code, never explanations."
+            ? "You are ArchVision, an expert UML modeler. Convert the user's description into a Mermaid diagram. Output ONLY valid Mermaid code inside ```mermaid ``` codeblock, never explanations or text before/after."
             : input.action === "explain"
               ? "You are an expert software architect. Produce a concise Markdown design document for the provided diagram."
               : input.action === "analyze"
@@ -122,8 +147,9 @@ export class AiAssistService {
         },
       ];
 
+      const model = await getModel();
       const result = streamText({
-        model: await getModel(),
+        model,
         system,
         messages,
         temperature: input.action === "transform" ? 0.1 : 0.4,
@@ -137,11 +163,12 @@ export class AiAssistService {
       }
       sink.done();
       return "online";
-    } catch {
-      // Automatic fallback if API key quota / error occurs
+    } catch (err) {
+      console.error("[AiAssistService] streamChat online error:", err);
       await offlineChat(input, sink);
       sink.done();
       return "offline";
     }
   }
 }
+export const aiAssistService = new AiAssistService();
