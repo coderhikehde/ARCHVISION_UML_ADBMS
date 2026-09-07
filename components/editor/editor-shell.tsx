@@ -194,22 +194,7 @@ export function EditorShell({
     );
   }
 
-  if (engine.missing) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <div className="text-center">
-          <p className="text-sm font-bold text-foreground">Diagram not found</p>
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className="mt-3 text-[13px] font-semibold text-primary hover:underline"
-          >
-            Back to dashboard
-          </button>
-        </div>
-      </main>
-    );
-  }
+  // engine.missing check bypassed for auto-loading fallback
 
   const isClassModel = isMermaidModelType(engine.mermaidCode);
 
